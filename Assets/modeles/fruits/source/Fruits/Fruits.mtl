@@ -1,0 +1,152 @@
+# Blender 3.4.1 MTL File: 'Fruits.blend'
+# www.blender.org
+
+newmtl Banana
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/bananaTex_lambert1_BaseColor.jpg
+
+newmtl Coconut
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/coconut_DefaultMaterial_BaseColor.jpg
+map_Ns tex/coconut_DefaultMaterial_Roughness.jpg
+
+newmtl CoconutSliced
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/coconut1_DefaultMaterial_BaseColor.jpg
+map_Ns tex/coconut1_DefaultMaterial_Roughness.jpg
+
+newmtl GreenApple
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/appletex_lambert1_BaseColor1.jpg
+map_Ns tex/appletex_lambert1_Roughness.jpg
+
+newmtl GreenAppleSliced
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/AppleSlice_lambert1_BaseColor1.jpg
+map_Ns tex/appletex_lambert1_Roughness.jpg
+
+newmtl Orange
+Ns 360.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/OrangeSliced_DefaultMaterial_BaseColor.jpg
+
+newmtl OrangeSliced
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/Orange_DefaultMaterial_BaseColor.jpg
+
+newmtl Pear
+Ns 360.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/PEAR_DefaultMaterial_BaseColor.jpg
+
+newmtl PearSliced
+Ns 360.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/PEAR2_DefaultMaterial_BaseColor.jpg
+
+newmtl RedApple
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/appletex_lambert1_BaseColor.jpg
+map_Ns tex/appletex_lambert1_Roughness.jpg
+
+newmtl RedAppleSliced
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/AppleSlice_lambert1_BaseColor.jpg
+map_Ns tex/appletex_lambert1_Roughness.jpg
+
+newmtl Tomato
+Ns 132.231064
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/tomato_DefaultMaterial_BaseColor.jpg
+
+newmtl TomatoSliced
+Ns 506.178833
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/tomato1_DefaultMaterial_BaseColor.jpg
+
+newmtl Watermelon
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/WatermelonTex_lambert1_BaseColor.jpg
+map_Ns tex/WatermelonTex_lambert1_Roughness.jpg
+
+newmtl WatermelonSliced
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd tex/untitled_lambert1_BaseColor.jpg
+map_Ns tex/untitled_lambert1_Roughness.jpg
