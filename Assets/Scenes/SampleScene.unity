@@ -253,6 +253,8 @@ GameObject:
   - component: {fileID: 214538480}
   - component: {fileID: 214538479}
   - component: {fileID: 214538478}
+  - component: {fileID: 214538483}
+  - component: {fileID: 214538482}
   m_Layer: 0
   m_Name: DestroyFloor
   m_TagString: Untagged
@@ -344,12 +346,49 @@ Transform:
   m_GameObject: {fileID: 214538477}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.18, y: -0.16, z: -8.35}
+  m_LocalPosition: {x: 0.18, y: -1.223, z: -8.35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &214538482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214538477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 685c40bc669860a42845103681794ff4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tagsToDestroy:
+  - Slice
+  - Fruit
+--- !u!64 &214538483
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214538477}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &233695664 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -1718533774547682074, guid: 499666bfb7177694eafa5eac0ecdee36, type: 3}
@@ -768,7 +807,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 566446229}
-  - component: {fileID: 566446228}
+  - component: {fileID: 566446230}
   m_Layer: 0
   m_Name: Fruit Spawner
   m_TagString: Untagged
@@ -776,36 +815,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &566446228
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 566446227}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86968d274ea437648b3a534db2558f29, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  fruitPrefabs:
-  - {fileID: 444282398}
-  - {fileID: 1896848868}
-  - {fileID: 233695664}
-  - {fileID: 735461618}
-  - {fileID: 705180385}
-  - {fileID: 1262942978}
-  - {fileID: 165013785}
-  - {fileID: 1184426218}
-  spawnPoints:
-  - {fileID: 1919648180}
-  - {fileID: 1147206369}
-  - {fileID: 1058163624}
-  minSpawnInterval: 1
-  maxSpawnInterval: 1
-  minForce: 5
-  maxForce: 8
-  destroyYLevel: -2
 --- !u!4 &566446229
 Transform:
   m_ObjectHideFlags: 0
@@ -824,6 +833,45 @@ Transform:
   - {fileID: 1058163624}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &566446230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566446227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02aa285a341ca7044a85bd69518577d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fruitPrefabs:
+  - {fileID: 444282398}
+  - {fileID: 1896848868}
+  - {fileID: 233695664}
+  - {fileID: 735461618}
+  - {fileID: 705180385}
+  - {fileID: 1262942978}
+  - {fileID: 165013785}
+  - {fileID: 1184426218}
+  spawnPoints:
+  - {fileID: 1919648180}
+  - {fileID: 1147206369}
+  - {fileID: 1058163624}
+  minSpawnInterval: 0.5
+  maxSpawnInterval: 5
+  minForce: 1
+  maxForce: 4
+  destroyYLevel: -2
+  gravityScale: 0.1
+  fruitLinearDamping: 0.1
+  fruitAngularDamping: 0.05
+  simultaneousSpawnCounts: 010000000200000003000000
+  patternProbabilities:
+  - 0.4
+  - 0.4
+  - 0.2
+  simultaneousSpawnDelay: 0.1
 --- !u!1 &705180385 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 357731992820244498, guid: 499666bfb7177694eafa5eac0ecdee36, type: 3}
@@ -1589,7 +1637,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcdddd491c77c6447bd5c11e848a7bda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSliceVelocity: 0
+  minSliceVelocity: 1
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1
@@ -2089,7 +2137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcdddd491c77c6447bd5c11e848a7bda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSliceVelocity: 0
+  minSliceVelocity: 1
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1

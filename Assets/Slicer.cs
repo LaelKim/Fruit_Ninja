@@ -44,14 +44,14 @@ public class Slicer : MonoBehaviour
     }
 
     // -------------------- runtime --------------------
-   public void SliceFruitVR(GameObject fruit, Vector3 slicePoint, Vector3 sliceNormal)
-{
-    if (fruit == null) return;
-    
-    // Utiliser la couleur du fruit
-    Color capColor = TrySampleCapColor(fruit);
-    Slice(fruit, slicePoint, sliceNormal, capColor);
-}
+    public void SliceFruitVR(GameObject fruit, Vector3 slicePoint, Vector3 sliceNormal)
+    {
+        if (fruit == null) return;
+
+        // Utiliser la couleur du fruit
+        Color capColor = TrySampleCapColor(fruit);
+        Slice(fruit, slicePoint, sliceNormal, capColor);
+    }
 
     private void SliceAtMousePosition()
     {
@@ -77,101 +77,101 @@ public class Slicer : MonoBehaviour
     }
 
     private Color CapColorFromRenderer(Renderer rend)
-{
-    // Essayer d'abord la méthode normale
-    Color sampledColor = GetColorFromMaterial(rend.sharedMaterial);
-    
-    // Si blanc, utiliser la couleur par nom
-    if (IsWhiteColor(sampledColor))
     {
-        Color nameColor = GetFruitColorByName(rend.gameObject.name);
-        Debug.Log($"[Slicer] Using name-based color for {rend.gameObject.name}: #{ColorUtility.ToHtmlStringRGB(nameColor)}");
-        return nameColor;
-    }
-    
-    return sampledColor;
-}
+        // Essayer d'abord la méthode normale
+        Color sampledColor = GetColorFromMaterial(rend.sharedMaterial);
 
-private Color GetColorFromMaterial(Material mat)
-{
-    // Essayer dans l'ordre : _BaseColor → _Color → fallback
-    if (mat.HasProperty("_BaseColor")) 
-    {
-        Color c = mat.GetColor("_BaseColor");
-        Debug.Log($"[Slicer] Found _BaseColor: #{ColorUtility.ToHtmlStringRGB(c)}");
-        return c;
-    }
-    
-    if (mat.HasProperty("_Color")) 
-    {
-        Color c = mat.GetColor("_Color");
-        Debug.Log($"[Slicer] Found _Color: #{ColorUtility.ToHtmlStringRGB(c)}");
-        return c;
-    }
-    
-    Debug.LogWarning($"[Slicer] No color property found in material {mat.name}");
-    return Color.yellow; // Fallback visible
-}
-private Color GetFruitColorByName(string fruitName)
-{
-    if (string.IsNullOrEmpty(fruitName)) 
-    {
-        Debug.Log("[Slicer] No fruit name provided, using default flesh color");
-        return new Color(0.9f, 0.6f, 0.3f);
-    }
-
-    string name = fruitName.ToLower();
-    Color color;
-    
-    if (name.Contains("banana")) color = new Color(1.0f, 0.95f, 0.8f);
-    else if (name.Contains("coconut")) color = new Color(0.98f, 0.92f, 0.84f);
-    else if (name.Contains("greenapple")) color = new Color(0.8f, 0.95f, 0.7f);
-    else if (name.Contains("orange")) color = new Color(1.0f, 0.65f, 0.3f);
-    else if (name.Contains("pear")) color = new Color(0.98f, 0.95f, 0.8f);
-    else if (name.Contains("redapple")) color = new Color(0.95f, 0.8f, 0.8f);
-    else if (name.Contains("tomato")) color = new Color(0.95f, 0.7f, 0.6f);
-    else if (name.Contains("watermelon")) color = new Color(0.95f, 0.6f, 0.6f);
-    else if (name.Contains("apple")) color = new Color(0.9f, 0.8f, 0.8f);
-    else color = new Color(0.9f, 0.7f, 0.5f);
-    
-    Debug.Log($"[Slicer] Fruit '{fruitName}' -> Color: #{ColorUtility.ToHtmlStringRGB(color)}");
-    return color;
-}
-private bool HasTexture(Material mat)
-{
-    return (mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != null) ||
-           (mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null);
-}
-
-private Color SampleTextureColor(Material mat)
-{
-    try
-    {
-        Texture2D tex = null;
-        
-        if (mat.HasProperty("_MainTex")) tex = mat.GetTexture("_MainTex") as Texture2D;
-        if (tex == null && mat.HasProperty("_BaseMap")) tex = mat.GetTexture("_BaseMap") as Texture2D;
-        
-        if (tex != null && tex.isReadable)
+        // Si blanc, utiliser la couleur par nom
+        if (IsWhiteColor(sampledColor))
         {
-            // Sample le centre de la texture
-            Color centerColor = tex.GetPixel(tex.width / 2, tex.height / 2);
-            Debug.Log($"[Slicer] Sampled texture center: #{ColorUtility.ToHtmlStringRGB(centerColor)}");
-            return centerColor;
+            Color nameColor = GetFruitColorByName(rend.gameObject.name);
+            Debug.Log($"[Slicer] Using name-based color for {rend.gameObject.name}: #{ColorUtility.ToHtmlStringRGB(nameColor)}");
+            return nameColor;
         }
-    }
-    catch (System.Exception e)
-    {
-        Debug.LogWarning($"[Slicer] Texture sampling failed: {e.Message}");
-    }
-    
-    return Color.white;
-}
 
-private bool IsWhiteColor(Color color)
-{
-    return color.r > 0.9f && color.g > 0.9f && color.b > 0.9f;
-}
+        return sampledColor;
+    }
+
+    private Color GetColorFromMaterial(Material mat)
+    {
+        // Essayer dans l'ordre : _BaseColor → _Color → fallback
+        if (mat.HasProperty("_BaseColor"))
+        {
+            Color c = mat.GetColor("_BaseColor");
+            Debug.Log($"[Slicer] Found _BaseColor: #{ColorUtility.ToHtmlStringRGB(c)}");
+            return c;
+        }
+
+        if (mat.HasProperty("_Color"))
+        {
+            Color c = mat.GetColor("_Color");
+            Debug.Log($"[Slicer] Found _Color: #{ColorUtility.ToHtmlStringRGB(c)}");
+            return c;
+        }
+
+        Debug.LogWarning($"[Slicer] No color property found in material {mat.name}");
+        return Color.yellow; // Fallback visible
+    }
+    private Color GetFruitColorByName(string fruitName)
+    {
+        if (string.IsNullOrEmpty(fruitName))
+        {
+            Debug.Log("[Slicer] No fruit name provided, using default flesh color");
+            return new Color(0.9f, 0.6f, 0.3f);
+        }
+
+        string name = fruitName.ToLower();
+        Color color;
+
+        if (name.Contains("banana")) color = new Color(1.0f, 0.95f, 0.8f);
+        else if (name.Contains("coconut")) color = new Color(0.98f, 0.92f, 0.84f);
+        else if (name.Contains("greenapple")) color = new Color(0.8f, 0.95f, 0.7f);
+        else if (name.Contains("orange")) color = new Color(1.0f, 0.65f, 0.3f);
+        else if (name.Contains("pear")) color = new Color(0.98f, 0.95f, 0.8f);
+        else if (name.Contains("redapple")) color = new Color(0.95f, 0.8f, 0.8f);
+        else if (name.Contains("tomato")) color = new Color(0.95f, 0.7f, 0.6f);
+        else if (name.Contains("watermelon")) color = new Color(0.95f, 0.6f, 0.6f);
+        else if (name.Contains("apple")) color = new Color(0.9f, 0.8f, 0.8f);
+        else color = new Color(0.9f, 0.7f, 0.5f);
+
+        Debug.Log($"[Slicer] Fruit '{fruitName}' -> Color: #{ColorUtility.ToHtmlStringRGB(color)}");
+        return color;
+    }
+    private bool HasTexture(Material mat)
+    {
+        return (mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != null) ||
+               (mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null);
+    }
+
+    private Color SampleTextureColor(Material mat)
+    {
+        try
+        {
+            Texture2D tex = null;
+
+            if (mat.HasProperty("_MainTex")) tex = mat.GetTexture("_MainTex") as Texture2D;
+            if (tex == null && mat.HasProperty("_BaseMap")) tex = mat.GetTexture("_BaseMap") as Texture2D;
+
+            if (tex != null && tex.isReadable)
+            {
+                // Sample le centre de la texture
+                Color centerColor = tex.GetPixel(tex.width / 2, tex.height / 2);
+                Debug.Log($"[Slicer] Sampled texture center: #{ColorUtility.ToHtmlStringRGB(centerColor)}");
+                return centerColor;
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[Slicer] Texture sampling failed: {e.Message}");
+        }
+
+        return Color.white;
+    }
+
+    private bool IsWhiteColor(Color color)
+    {
+        return color.r > 0.9f && color.g > 0.9f && color.b > 0.9f;
+    }
 
     private bool TryAverageTextureColor(Texture tex, out Color avg)
     {
@@ -280,7 +280,7 @@ private bool IsWhiteColor(Color color)
 
         var verts = source.vertices;
         var norms = (source.normals != null && source.normals.Length == verts.Length) ? source.normals : new Vector3[verts.Length];
-        var uvs   = (source.uv != null && source.uv.Length == verts.Length) ? source.uv : Enumerable.Repeat(Vector2.zero, verts.Length).ToArray();
+        var uvs = (source.uv != null && source.uv.Length == verts.Length) ? source.uv : Enumerable.Repeat(Vector2.zero, verts.Length).ToArray();
 
         // Concatène tous les submeshes
         List<int> allTris = new List<int>();
@@ -291,7 +291,7 @@ private bool IsWhiteColor(Color color)
 
         List<Triangle> A_surface = new List<Triangle>();
         List<Triangle> B_surface = new List<Triangle>();
-        List<Segment>  cutSegments = new List<Segment>();
+        List<Segment> cutSegments = new List<Segment>();
 
         for (int i = 0; i < allTris.Count; i += 3)
         {
@@ -396,162 +396,162 @@ private bool IsWhiteColor(Color color)
     // -------------------- reconstruction des caps --------------------
     private void BuildCapsFromSegments(List<Segment> segments, Vector3 planeNormal, Vector3 planePoint,
                                    out List<Triangle> capA, out List<Triangle> capB)
-{
-    capA = new List<Triangle>();
-    capB = new List<Triangle>();
-    if (segments == null || segments.Count == 0) return;
-
-    // Base (u,v) du plan pour projeter en 2D
-    Vector3 u = Vector3.Cross(planeNormal, Vector3.up);
-    if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(planeNormal, Vector3.right);
-    u.Normalize();
-    Vector3 v = Vector3.Cross(planeNormal, u);
-
-    // Taille de tolérance adaptée à l’échelle (0.05% du rayon)
-    float scaleRef = 0.0f;
-    foreach (var s in segments) { scaleRef = Mathf.Max(scaleRef, (s.p0 - planePoint).magnitude, (s.p1 - planePoint).magnitude); }
-    float tol = Mathf.Max(1e-4f, scaleRef * 5e-4f);     // monde
-    float tol2 = tol * tol;
-
-    // Quantization pour souder (on projette en 2D puis on arrondit)
-    float q = tol * 2f; // taille de cellule de quantization
-    Dictionary<(int,int), int> gridToIndex = new Dictionary<(int,int), int>();
-    List<Vector3> welded = new List<Vector3>();         // points soudés (monde)
-    List<Vector2> welded2D = new List<Vector2>();       // leurs coords projetées (2D)
-
-    int Weld(Vector3 p)
     {
-        Vector3 d = p - planePoint;
-        float px = Vector3.Dot(d, u);
-        float py = Vector3.Dot(d, v);
-        int gx = Mathf.RoundToInt(px / q);
-        int gy = Mathf.RoundToInt(py / q);
-        var key = (gx, gy);
+        capA = new List<Triangle>();
+        capB = new List<Triangle>();
+        if (segments == null || segments.Count == 0) return;
 
-        if (gridToIndex.TryGetValue(key, out int idx))
+        // Base (u,v) du plan pour projeter en 2D
+        Vector3 u = Vector3.Cross(planeNormal, Vector3.up);
+        if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(planeNormal, Vector3.right);
+        u.Normalize();
+        Vector3 v = Vector3.Cross(planeNormal, u);
+
+        // Taille de tolérance adaptée à l’échelle (0.05% du rayon)
+        float scaleRef = 0.0f;
+        foreach (var s in segments) { scaleRef = Mathf.Max(scaleRef, (s.p0 - planePoint).magnitude, (s.p1 - planePoint).magnitude); }
+        float tol = Mathf.Max(1e-4f, scaleRef * 5e-4f);     // monde
+        float tol2 = tol * tol;
+
+        // Quantization pour souder (on projette en 2D puis on arrondit)
+        float q = tol * 2f; // taille de cellule de quantization
+        Dictionary<(int, int), int> gridToIndex = new Dictionary<(int, int), int>();
+        List<Vector3> welded = new List<Vector3>();         // points soudés (monde)
+        List<Vector2> welded2D = new List<Vector2>();       // leurs coords projetées (2D)
+
+        int Weld(Vector3 p)
         {
-            // si proche, réutilise
-            if ((welded[idx] - p).sqrMagnitude <= tol2) return idx;
+            Vector3 d = p - planePoint;
+            float px = Vector3.Dot(d, u);
+            float py = Vector3.Dot(d, v);
+            int gx = Mathf.RoundToInt(px / q);
+            int gy = Mathf.RoundToInt(py / q);
+            var key = (gx, gy);
+
+            if (gridToIndex.TryGetValue(key, out int idx))
+            {
+                // si proche, réutilise
+                if ((welded[idx] - p).sqrMagnitude <= tol2) return idx;
+            }
+
+            int ni = welded.Count;
+            welded.Add(p);
+            welded2D.Add(new Vector2(px, py));
+            gridToIndex[key] = ni;
+            return ni;
         }
 
-        int ni = welded.Count;
-        welded.Add(p);
-        welded2D.Add(new Vector2(px, py));
-        gridToIndex[key] = ni;
-        return ni;
-    }
+        // Graphe non orienté : pour chaque point, la liste de ses voisins
+        List<HashSet<int>> adj = new List<HashSet<int>>();
 
-    // Graphe non orienté : pour chaque point, la liste de ses voisins
-    List<HashSet<int>> adj = new List<HashSet<int>>();
-
-    void EnsureAdjSize(int n)
-    {
-        while (adj.Count < n) adj.Add(new HashSet<int>());
-    }
-
-    foreach (var s in segments)
-    {
-        int a = Weld(s.p0);
-        int b = Weld(s.p1);
-        if (a == b) continue;
-        EnsureAdjSize(Mathf.Max(a, b) + 1);
-        adj[a].Add(b);
-        adj[b].Add(a);
-    }
-
-    // Extraire tous les cycles fermés
-    bool[] used = new bool[welded.Count];
-
-    for (int start = 0; start < welded.Count; start++)
-    {
-        if (adj.Count <= start || adj[start].Count == 0) continue;
-        if (used[start]) continue;
-
-        // Suivi d’un cycle en choisissant à chaque fois le voisin le "plus angulairement proche"
-        List<int> loop = new List<int>();
-        int current = start;
-        int prev = -1;
-
-        // On tente d’avancer jusqu’à ce qu’on revienne au point de départ
-        for (int safety = 0; safety < 4096; safety++)
+        void EnsureAdjSize(int n)
         {
-            loop.Add(current);
-            used[current] = true;
+            while (adj.Count < n) adj.Add(new HashSet<int>());
+        }
 
-            // Choisir prochain voisin
-            int next = -1;
-            if (adj[current].Count == 0) break;
+        foreach (var s in segments)
+        {
+            int a = Weld(s.p0);
+            int b = Weld(s.p1);
+            if (a == b) continue;
+            EnsureAdjSize(Mathf.Max(a, b) + 1);
+            adj[a].Add(b);
+            adj[b].Add(a);
+        }
 
-            if (prev < 0)
+        // Extraire tous les cycles fermés
+        bool[] used = new bool[welded.Count];
+
+        for (int start = 0; start < welded.Count; start++)
+        {
+            if (adj.Count <= start || adj[start].Count == 0) continue;
+            if (used[start]) continue;
+
+            // Suivi d’un cycle en choisissant à chaque fois le voisin le "plus angulairement proche"
+            List<int> loop = new List<int>();
+            int current = start;
+            int prev = -1;
+
+            // On tente d’avancer jusqu’à ce qu’on revienne au point de départ
+            for (int safety = 0; safety < 4096; safety++)
             {
-                // 1er pas : prends n'importe quel voisin
-                next = adj[current].First();
-            }
-            else
-            {
-                // Choisir le voisin le plus "dans la continuité" (max cos angle en 2D)
-                Vector2 a = welded2D[current] - welded2D[prev];
-                float bestDot = -999f;
-                foreach (var nb in adj[current])
+                loop.Add(current);
+                used[current] = true;
+
+                // Choisir prochain voisin
+                int next = -1;
+                if (adj[current].Count == 0) break;
+
+                if (prev < 0)
                 {
-                    if (nb == prev) continue;
-                    Vector2 b = welded2D[nb] - welded2D[current];
-                    float dot = Vector2.Dot(a.normalized, b.normalized);
-                    if (dot > bestDot) { bestDot = dot; next = nb; }
+                    // 1er pas : prends n'importe quel voisin
+                    next = adj[current].First();
                 }
-                if (next < 0) next = prev; // cul-de-sac
-            }
+                else
+                {
+                    // Choisir le voisin le plus "dans la continuité" (max cos angle en 2D)
+                    Vector2 a = welded2D[current] - welded2D[prev];
+                    float bestDot = -999f;
+                    foreach (var nb in adj[current])
+                    {
+                        if (nb == prev) continue;
+                        Vector2 b = welded2D[nb] - welded2D[current];
+                        float dot = Vector2.Dot(a.normalized, b.normalized);
+                        if (dot > bestDot) { bestDot = dot; next = nb; }
+                    }
+                    if (next < 0) next = prev; // cul-de-sac
+                }
 
-            // Si on se ferme (proche du départ), on a un cycle
-            if (next >= 0 && (welded[next] - welded[start]).sqrMagnitude <= tol2 && loop.Count >= 3)
-            {
-                // Construire le contour final en monde
-                List<Vector3> ring = new List<Vector3>();
-                foreach (var id in loop) ring.Add(welded[id]);
-                TriangulateCapLoop(ring, planeNormal, planePoint, capA, capB);
-                break;
-            }
+                // Si on se ferme (proche du départ), on a un cycle
+                if (next >= 0 && (welded[next] - welded[start]).sqrMagnitude <= tol2 && loop.Count >= 3)
+                {
+                    // Construire le contour final en monde
+                    List<Vector3> ring = new List<Vector3>();
+                    foreach (var id in loop) ring.Add(welded[id]);
+                    TriangulateCapLoop(ring, planeNormal, planePoint, capA, capB);
+                    break;
+                }
 
-            // Avancer
-            if (next < 0 || adj[current].Count == 1) break; // pas de boucle
-            int tmp = current; current = next; prev = tmp;
+                // Avancer
+                if (next < 0 || adj[current].Count == 1) break; // pas de boucle
+                int tmp = current; current = next; prev = tmp;
+            }
         }
     }
-}
 
 
     private void TriangulateCapLoop(List<Vector3> loopWorld, Vector3 planeNormal, Vector3 planePoint,
                                 List<Triangle> capA, List<Triangle> capB)
-{
-    if (loopWorld == null || loopWorld.Count < 3) return;
-
-    // Base 2D du plan
-    Vector3 u = Vector3.Cross(planeNormal, Vector3.up);
-    if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(planeNormal, Vector3.right);
-    u.Normalize();
-    Vector3 v = Vector3.Cross(planeNormal, u);
-
-    // Centre géométrique
-    Vector3 center = Vector3.zero;
-    foreach (var p in loopWorld) center += p;
-    center /= loopWorld.Count;
-
-    // Ordonner par angle en 2D autour du centre
-    var ordered = loopWorld
-        .Select(p => new { p, ang = Mathf.Atan2(Vector3.Dot(p - center, v), Vector3.Dot(p - center, u)) })
-        .OrderBy(t => t.ang)
-        .Select(t => t.p)
-        .ToList();
-
-    VertexData c = new VertexData(center, planeNormal, Vector2.zero);
-    for (int i = 0; i < ordered.Count; i++)
     {
-        var a = new VertexData(ordered[i], planeNormal, Vector2.zero);
-        var b = new VertexData(ordered[(i + 1) % ordered.Count], planeNormal, Vector2.zero);
-        capA.Add(new Triangle(c, a, b));   // face 1
-        capB.Add(new Triangle(c, b, a));   // face 2 (inversée)
+        if (loopWorld == null || loopWorld.Count < 3) return;
+
+        // Base 2D du plan
+        Vector3 u = Vector3.Cross(planeNormal, Vector3.up);
+        if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(planeNormal, Vector3.right);
+        u.Normalize();
+        Vector3 v = Vector3.Cross(planeNormal, u);
+
+        // Centre géométrique
+        Vector3 center = Vector3.zero;
+        foreach (var p in loopWorld) center += p;
+        center /= loopWorld.Count;
+
+        // Ordonner par angle en 2D autour du centre
+        var ordered = loopWorld
+            .Select(p => new { p, ang = Mathf.Atan2(Vector3.Dot(p - center, v), Vector3.Dot(p - center, u)) })
+            .OrderBy(t => t.ang)
+            .Select(t => t.p)
+            .ToList();
+
+        VertexData c = new VertexData(center, planeNormal, Vector2.zero);
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            var a = new VertexData(ordered[i], planeNormal, Vector2.zero);
+            var b = new VertexData(ordered[(i + 1) % ordered.Count], planeNormal, Vector2.zero);
+            capA.Add(new Triangle(c, a, b));   // face 1
+            capB.Add(new Triangle(c, b, a));   // face 2 (inversée)
+        }
     }
-}
 
     // -------------------- construction mesh --------------------
     private GameObject BuildMesh(GameObject original, List<Triangle> surface, List<Triangle> caps,
@@ -560,6 +560,9 @@ private bool IsWhiteColor(Color color)
         if ((surface == null || surface.Count == 0) && (caps == null || caps.Count == 0)) return null;
 
         GameObject go = new GameObject(name);
+        go.tag = original.tag;
+        go.layer = original.layer;
+
         go.transform.SetPositionAndRotation(original.transform.position, original.transform.rotation);
         go.transform.localScale = original.transform.localScale;
 
@@ -569,10 +572,10 @@ private bool IsWhiteColor(Color color)
         Mesh mesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
 
         List<Vector3> vertices = new List<Vector3>();
-        List<Vector3> normals  = new List<Vector3>();
-        List<Vector2> uv0      = new List<Vector2>();
-        List<int> idxSurface   = new List<int>();
-        List<int> idxCaps      = new List<int>();
+        List<Vector3> normals = new List<Vector3>();
+        List<Vector2> uv0 = new List<Vector2>();
+        List<int> idxSurface = new List<int>();
+        List<int> idxCaps = new List<int>();
 
         bool negativeScale = (go.transform.lossyScale.x * go.transform.lossyScale.y * go.transform.lossyScale.z) < 0f;
 
@@ -597,14 +600,14 @@ private bool IsWhiteColor(Color color)
         }
 
         if (surface != null) foreach (var t in surface) PushTriangle(t, idxSurface);
-        if (caps    != null) foreach (var t in caps)    PushTriangle(t, idxCaps);
+        if (caps != null) foreach (var t in caps) PushTriangle(t, idxCaps);
 
         mesh.SetVertices(vertices);
         mesh.SetNormals(normals);
         mesh.SetUVs(0, uv0);
         mesh.subMeshCount = 2;
         mesh.SetTriangles(idxSurface, 0, true);
-        mesh.SetTriangles(idxCaps,    1, true);
+        mesh.SetTriangles(idxCaps, 1, true);
         mesh.RecalculateBounds();
 
         mf.sharedMesh = mesh;
@@ -614,34 +617,34 @@ private bool IsWhiteColor(Color color)
 
     // -------------------- matériau cap --------------------
     private Material MakeCapMaterial(Color? capColor, Material fruitMat)
-{
-    // Shader prioritaire URP Unlit
-    Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
-    if (sh == null) sh = Shader.Find("Unlit/Color");
-    if (sh == null) sh = Shader.Find("Standard");
-    Material m = new Material(sh);
-    
-    // ⭐ FORCER la couleur calculée du fruit - ignorer capMaterial de l'inspecteur
-    Color finalColor = capColor ?? Color.gray;
-    
-    // Appliquer la couleur
-    if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", finalColor);
-    if (m.HasProperty("_Color")) m.SetColor("_Color", finalColor);
-    
-    // Supprimer les textures
-    if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", null);
-    if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", null);
-    
-    // Rendre double-face
-    if (m.HasProperty("_Cull")) m.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
-    if (m.HasProperty("_CullMode")) m.SetInt("_CullMode", (int)UnityEngine.Rendering.CullMode.Off);
-    
-    // Debug
-    if (debugLogCapColor) 
-        Debug.Log($"[Slicer] Final cap color: #{ColorUtility.ToHtmlStringRGB(finalColor)}");
-    
-    return m;
-}
+    {
+        // Shader prioritaire URP Unlit
+        Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
+        if (sh == null) sh = Shader.Find("Unlit/Color");
+        if (sh == null) sh = Shader.Find("Standard");
+        Material m = new Material(sh);
+
+        // ⭐ FORCER la couleur calculée du fruit - ignorer capMaterial de l'inspecteur
+        Color finalColor = capColor ?? Color.gray;
+
+        // Appliquer la couleur
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", finalColor);
+        if (m.HasProperty("_Color")) m.SetColor("_Color", finalColor);
+
+        // Supprimer les textures
+        if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", null);
+        if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", null);
+
+        // Rendre double-face
+        if (m.HasProperty("_Cull")) m.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+        if (m.HasProperty("_CullMode")) m.SetInt("_CullMode", (int)UnityEngine.Rendering.CullMode.Off);
+
+        // Debug
+        if (debugLogCapColor)
+            Debug.Log($"[Slicer] Final cap color: #{ColorUtility.ToHtmlStringRGB(finalColor)}");
+
+        return m;
+    }
     // -------------------- physique --------------------
     private void SetupSlicedPhysics(GameObject slice, GameObject original, Vector3 forceDirection)
     {
@@ -673,4 +676,5 @@ private bool IsWhiteColor(Color color)
         else
         { var bx = slice.AddComponent<BoxCollider>(); bx.center = b.center; bx.size = size; return bx; }
     }
+    
 }
