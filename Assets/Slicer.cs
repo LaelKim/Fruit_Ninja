@@ -44,11 +44,14 @@ public class Slicer : MonoBehaviour
     }
 
     // -------------------- runtime --------------------
-    private void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
-            SliceAtMousePosition();
-    }
+   public void SliceFruitVR(GameObject fruit, Vector3 slicePoint, Vector3 sliceNormal)
+{
+    if (fruit == null) return;
+    
+    // Utiliser la couleur du fruit
+    Color capColor = TrySampleCapColor(fruit);
+    Slice(fruit, slicePoint, sliceNormal, capColor);
+}
 
     private void SliceAtMousePosition()
     {
