@@ -9,11 +9,17 @@ public class NewMonoBehaviourScript : MonoBehaviour
     public Transform[] spawnPoints;
 
     [Header("Spawn Settings")]
+
+    
     public float minSpawnInterval = 1f;
     public float maxSpawnInterval = 3f;
     public float minForce = 8f;
     public float maxForce = 12f;
     public float destroyYLevel = -2f;
+
+    [Header("Rotation Settings")]
+    public float minTorque = 0.5f;  
+    public float maxTorque = 2f; 
 
     private List<GameObject> activeFruits = new List<GameObject>();
 

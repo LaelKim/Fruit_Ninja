@@ -3,11 +3,10 @@ using UnityEngine;
 public class DestroyFloor : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private string[] tagsToDestroy = { "Slice", "Fruit" };
+    [SerializeField] private string[] tagsToDestroy = { "Fruit" };
     
     void OnTriggerEnter(Collider other)
     {
-        // Vérifier si l'objet a un des tags à détruire
         foreach (string tag in tagsToDestroy)
         {
             if (other.CompareTag(tag))

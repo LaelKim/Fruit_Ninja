@@ -8,6 +8,11 @@ public class FruitSpawner : MonoBehaviour
     public GameObject[] fruitPrefabs;
     public Transform[] spawnPoints;
 
+    [Header("Bomb Settings")] 
+[Range(0f, 1f)]
+public float bombSpawnChance = 0.1f; // 10% de chance
+public int bombPrefabIndex = 8;
+
     [Header("Spawn Settings")]
     public float minSpawnInterval = 0.5f;
     public float maxSpawnInterval = 1.5f;
@@ -19,6 +24,11 @@ public class FruitSpawner : MonoBehaviour
     public float gravityScale = 0.8f;
     public float fruitLinearDamping = 0.1f;
     public float fruitAngularDamping = 0.05f;
+
+    [Header("Rotation Settings")]
+    [Range(0f, 50f)]
+    public float maxRotationStrength = 20f; 
+    public bool randomizeRotationAxis = true;
 
     [Header("Spawn Patterns")]
     public int[] simultaneousSpawnCounts = { 1, 2, 3 };
@@ -130,33 +140,86 @@ public class FruitSpawner : MonoBehaviour
     }
 
     IEnumerator SpawnFruitAtPoint(int spawnIndex)
+{
+    spawnPointOccupied[spawnIndex] = true;
+
+    yield return new WaitForSeconds(0.05f);
+
+    if (fruitPrefabs.Length == 0) yield break;
+
+    // ⭐ MODIFICATION: Choisir entre fruit normal et bombe
+    GameObject fruitPrefab = ChooseFruitOrBomb();
+    Transform spawnPoint = spawnPoints[spawnIndex];
+    
+    GameObject fruit = Instantiate(fruitPrefab, spawnPoint.position, GetRandomRotation());
+    activeFruits.Add(fruit);
+    
+    // Enregistrer le fruit dans sa ligne
+    int lineKey = GetLineKey(spawnPoint.position);
+    if (!activeFruitsByLine.ContainsKey(lineKey))
     {
-        spawnPointOccupied[spawnIndex] = true;
-
-        yield return new WaitForSeconds(0.05f);
-
-        if (fruitPrefabs.Length == 0) yield break;
-
-        GameObject fruitPrefab = fruitPrefabs[Random.Range(0, fruitPrefabs.Length)];
-        Transform spawnPoint = spawnPoints[spawnIndex];
-        
-        GameObject fruit = Instantiate(fruitPrefab, spawnPoint.position, GetRandomRotation());
-        activeFruits.Add(fruit);
-        
-        // Enregistrer le fruit dans sa ligne
-        int lineKey = GetLineKey(spawnPoint.position);
-        if (!activeFruitsByLine.ContainsKey(lineKey))
-        {
-            activeFruitsByLine[lineKey] = new List<GameObject>();
-        }
-        activeFruitsByLine[lineKey].Add(fruit);
-        
-        SetupFruitPhysics(fruit, spawnIndex);
-        
-        StartCoroutine(ReleaseSpawnPoint(spawnIndex, 1f));
-        
-        Destroy(fruit, 10f);
+        activeFruitsByLine[lineKey] = new List<GameObject>();
     }
+    activeFruitsByLine[lineKey].Add(fruit);
+    
+    SetupFruitPhysics(fruit, spawnIndex);
+    
+    StartCoroutine(ReleaseSpawnPoint(spawnIndex, 1f));
+    
+    Destroy(fruit, 10f);
+}
+
+// ⭐ NOUVELLE MÉTHODE: Choisir entre fruit et bombe
+private GameObject ChooseFruitOrBomb()
+{
+    // Vérifier si on peut spawn une bombe
+    if (ShouldSpawnBomb() && IsBombAvailable())
+    {
+        Debug.Log(" Spawning a BOMB!");
+        return fruitPrefabs[bombPrefabIndex];
+    }
+    else
+    {
+        // Spawn un fruit normal (tous sauf la bombe)
+        return GetRandomFruit();
+    }
+}
+
+
+private bool ShouldSpawnBomb()
+{
+    return Random.value < bombSpawnChance;
+}
+
+private bool IsBombAvailable()
+{
+    return bombPrefabIndex >= 0 && 
+           bombPrefabIndex < fruitPrefabs.Length && 
+           fruitPrefabs[bombPrefabIndex] != null;
+}
+
+
+private GameObject GetRandomFruit()
+{
+    if (fruitPrefabs.Length <= 1) 
+        return fruitPrefabs[0];
+    
+    // Créer une liste d'indices valides (exclut l'index de la bombe)
+    List<int> validIndices = new List<int>();
+    for (int i = 0; i < fruitPrefabs.Length; i++)
+    {
+        if (i != bombPrefabIndex && fruitPrefabs[i] != null)
+        {
+            validIndices.Add(i);
+        }
+    }
+    
+    if (validIndices.Count == 0)
+        return fruitPrefabs[0]; // Fallback
+    
+    int randomIndex = validIndices[Random.Range(0, validIndices.Count)];
+    return fruitPrefabs[randomIndex];
+}
 
     void SetupFruitPhysics(GameObject fruit, int spawnIndex)
     {
@@ -177,14 +240,36 @@ public class FruitSpawner : MonoBehaviour
         Vector3 force = forceDirection * forceMagnitude;
         rb.AddForce(force, ForceMode.Impulse);
         
-        Vector3 torque = new Vector3(
-            Random.Range(-20f, 20f),
-            Random.Range(-20f, 20f), 
-            Random.Range(-20f, 20f)
-        );
+
+        Vector3 torque = CalculateTorque();
         rb.AddTorque(torque, ForceMode.Impulse);
         
         StartCoroutine(ApplyCustomGravity(rb));
+    }
+
+    Vector3 CalculateTorque()
+    {
+        if (maxRotationStrength <= 0f)
+            return Vector3.zero;
+
+        if (randomizeRotationAxis)
+        {
+            // Rotation aléatoire sur tous les axes
+            return new Vector3(
+                Random.Range(-maxRotationStrength, maxRotationStrength),
+                Random.Range(-maxRotationStrength, maxRotationStrength), 
+                Random.Range(-maxRotationStrength, maxRotationStrength)
+            );
+        }
+        else
+        {
+            // Rotation principalement sur l'axe Y (plus réaliste pour les fruits)
+            return new Vector3(
+                Random.Range(-maxRotationStrength * 0.2f, maxRotationStrength * 0.2f),
+                Random.Range(-maxRotationStrength, maxRotationStrength), 
+                Random.Range(-maxRotationStrength * 0.2f, maxRotationStrength * 0.2f)
+            );
+        }
     }
 
     IEnumerator ApplyCustomGravity(Rigidbody rb)
