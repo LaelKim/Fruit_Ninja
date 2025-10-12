@@ -2,21 +2,16 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-/// Slicer complet :
-/// - Plan de coupe (point + normale)
-/// - Classement des triangles par côté
-/// - Coupe propre des triangles intersectés (interpolation pos/uv/normales)
-/// - Reconstruction des boucles d’intersection (soudure) puis triangulation des caps en éventail
-/// - Construction des 2 meshes (surface + cap en 2 sous-meshes)
-/// - Couleur des caps = moyenne de la texture du fruit (multi-mat OK) avec fallback GPU
-/// - Matériau des caps forcé en Unlit + double-face
 public class Slicer : MonoBehaviour
 {
     [Header("Slicing Settings")]
-    public Material capMaterial;               // modèle (facultatif) – sera cloné/écrasé
+    public Material capMaterial;
     public bool enableDebug = false;
     public bool debugLogCapColor = false;
     public float gizmoNormalScale = 0.25f;
+
+    [Header("Audio")]
+    public bool enableSliceSounds = true;
 
     [Tooltip("Tolérance géométrique pour la détection d'intersections avec le plan")]
     public float epsilon = 1e-5f;
@@ -39,18 +34,38 @@ public class Slicer : MonoBehaviour
 
     private class Segment
     {
-        public Vector3 p0, p1; // monde
+        public Vector3 p0, p1;
         public Segment(Vector3 a, Vector3 b) { p0 = a; p1 = b; }
     }
 
-    // -------------------- runtime --------------------
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            SliceAtMousePosition();
+        }
+    }
+
     public void SliceFruitVR(GameObject fruit, Vector3 slicePoint, Vector3 sliceNormal)
     {
         if (fruit == null) return;
 
-        // Utiliser la couleur du fruit
+        // NOUVEAU : Son de découpe (optionnel - déjà joué par KatanaSlicer)
+        if (enableSliceSounds && AudioManager.Instance != null)
+        {
+            // Petit son supplémentaire pour le slice réussi
+            AudioManager.Instance.PlayFruitSlice();
+        }
+
         Color capColor = TrySampleCapColor(fruit);
         Slice(fruit, slicePoint, sliceNormal, capColor);
+    }
+
+    // API publique pour le slicing
+    public void Slice(GameObject objectToSlice, Vector3 slicePoint, Vector3 sliceNormal, Color? capColorOverride = null)
+    {
+        GameObject a, b;
+        SliceObject(objectToSlice, sliceNormal.normalized, slicePoint, out a, out b, capColorOverride);
     }
 
     private void SliceAtMousePosition()
@@ -61,14 +76,15 @@ public class Slicer : MonoBehaviour
         if (hit.collider.GetComponent<MeshFilter>() == null && hit.collider.transform.childCount == 0)
             return;
 
-        // Plan perpendiculaire à la caméra
         Vector3 planeNormal = Vector3.Cross(ray.direction, Vector3.up).normalized;
         if (planeNormal.sqrMagnitude < 1e-6f) planeNormal = Vector3.right;
 
         Slice(hit.collider.gameObject, hit.point, planeNormal, TrySampleCapColor(hit.collider.gameObject));
     }
 
-    // -------------------- couleur de cap --------------------
+    // ... [Le reste de votre code Slicer reste EXACTEMENT le même] ...
+    // Toutes les méthodes de slicing, triangulation, etc. restent identiques
+    
     private Color TrySampleCapColor(GameObject go)
     {
         var rend = go.GetComponent<Renderer>();
@@ -78,65 +94,46 @@ public class Slicer : MonoBehaviour
 
     private Color CapColorFromRenderer(Renderer rend)
     {
-        // Essayer d'abord la méthode normale
         Color sampledColor = GetColorFromMaterial(rend.sharedMaterial);
-
-        // Si blanc, utiliser la couleur par nom
         if (IsWhiteColor(sampledColor))
         {
             Color nameColor = GetFruitColorByName(rend.gameObject.name);
-            Debug.Log($"[Slicer] Using name-based color for {rend.gameObject.name}: #{ColorUtility.ToHtmlStringRGB(nameColor)}");
+            if (enableDebug) 
+                Debug.Log($"[Slicer] Using name-based color for {rend.gameObject.name}: #{ColorUtility.ToHtmlStringRGB(nameColor)}");
             return nameColor;
         }
-
         return sampledColor;
     }
 
     private Color GetColorFromMaterial(Material mat)
     {
-        // Essayer dans l'ordre : _BaseColor → _Color → fallback
-        if (mat.HasProperty("_BaseColor"))
-        {
-            Color c = mat.GetColor("_BaseColor");
-            Debug.Log($"[Slicer] Found _BaseColor: #{ColorUtility.ToHtmlStringRGB(c)}");
-            return c;
-        }
-
-        if (mat.HasProperty("_Color"))
-        {
-            Color c = mat.GetColor("_Color");
-            Debug.Log($"[Slicer] Found _Color: #{ColorUtility.ToHtmlStringRGB(c)}");
-            return c;
-        }
-
-        Debug.LogWarning($"[Slicer] No color property found in material {mat.name}");
-        return Color.yellow; // Fallback visible
+        if (mat.HasProperty("_BaseColor")) return mat.GetColor("_BaseColor");
+        if (mat.HasProperty("_Color")) return mat.GetColor("_Color");
+        return Color.yellow;
     }
+
     private Color GetFruitColorByName(string fruitName)
     {
-        if (string.IsNullOrEmpty(fruitName))
-        {
-            Debug.Log("[Slicer] No fruit name provided, using default flesh color");
-            return new Color(0.9f, 0.6f, 0.3f);
-        }
+        if (string.IsNullOrEmpty(fruitName)) return new Color(0.9f, 0.6f, 0.3f);
 
         string name = fruitName.ToLower();
-        Color color;
-
-        if (name.Contains("banana")) color = new Color(1.0f, 0.95f, 0.8f);
-        else if (name.Contains("coconut")) color = new Color(0.98f, 0.92f, 0.84f);
-        else if (name.Contains("greenapple")) color = new Color(0.8f, 0.95f, 0.7f);
-        else if (name.Contains("orange")) color = new Color(1.0f, 0.65f, 0.3f);
-        else if (name.Contains("pear")) color = new Color(0.98f, 0.95f, 0.8f);
-        else if (name.Contains("redapple")) color = new Color(0.95f, 0.8f, 0.8f);
-        else if (name.Contains("tomato")) color = new Color(0.95f, 0.7f, 0.6f);
-        else if (name.Contains("watermelon")) color = new Color(0.95f, 0.6f, 0.6f);
-        else if (name.Contains("apple")) color = new Color(0.9f, 0.8f, 0.8f);
-        else color = new Color(0.9f, 0.7f, 0.5f);
-
-        Debug.Log($"[Slicer] Fruit '{fruitName}' -> Color: #{ColorUtility.ToHtmlStringRGB(color)}");
-        return color;
+        if (name.Contains("banana")) return new Color(1.0f, 0.95f, 0.8f);
+        else if (name.Contains("coconut")) return new Color(0.98f, 0.92f, 0.84f);
+        else if (name.Contains("greenapple")) return new Color(0.8f, 0.95f, 0.7f);
+        else if (name.Contains("orange")) return new Color(1.0f, 0.65f, 0.3f);
+        else if (name.Contains("pear")) return new Color(0.98f, 0.95f, 0.8f);
+        else if (name.Contains("redapple")) return new Color(0.95f, 0.8f, 0.8f);
+        else if (name.Contains("tomato")) return new Color(0.95f, 0.7f, 0.6f);
+        else if (name.Contains("watermelon")) return new Color(0.95f, 0.6f, 0.6f);
+        else if (name.Contains("apple")) return new Color(0.9f, 0.8f, 0.8f);
+        else return new Color(0.9f, 0.7f, 0.5f);
     }
+
+    private bool IsWhiteColor(Color color)
+    {
+        return color.r > 0.9f && color.g > 0.9f && color.b > 0.9f;
+    }
+
     private bool HasTexture(Material mat)
     {
         return (mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != null) ||
@@ -168,10 +165,6 @@ public class Slicer : MonoBehaviour
         return Color.white;
     }
 
-    private bool IsWhiteColor(Color color)
-    {
-        return color.r > 0.9f && color.g > 0.9f && color.b > 0.9f;
-    }
 
     private bool TryAverageTextureColor(Texture tex, out Color avg)
     {
@@ -221,11 +214,7 @@ public class Slicer : MonoBehaviour
     }
 
     // -------------------- API publique --------------------
-    public void Slice(GameObject objectToSlice, Vector3 planePoint, Vector3 planeNormal, Color? capColorOverride = null)
-    {
-        GameObject a, b;
-        SliceObject(objectToSlice, planeNormal.normalized, planePoint, out a, out b, capColorOverride);
-    }
+    
 
     public void SliceObject(GameObject objectToSlice, Vector3 planeNormal, Vector3 planePoint,
                             out GameObject sliceA, out GameObject sliceB, Color? capColorOverride = null)

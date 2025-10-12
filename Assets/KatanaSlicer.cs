@@ -6,6 +6,10 @@ public class KatanaSlicer : MonoBehaviour
     public float minSliceVelocity = 2.0f;
     public LayerMask fruitLayer = 1;
     
+    [Header("Audio")]
+    public bool enableSwipeSounds = true;
+    public float minSwipeSpeedForSound = 1.0f;
+    
     [Header("Debug")]
     public bool showDebugGizmos = true;
     
@@ -13,6 +17,7 @@ public class KatanaSlicer : MonoBehaviour
     private Vector3[] velocityBuffer = new Vector3[10];
     private int bufferIndex = 0;
     private Vector3 lastPosition;
+    private float currentSpeed;
     
     void Start()
     {
@@ -40,6 +45,14 @@ public class KatanaSlicer : MonoBehaviour
         velocityBuffer[bufferIndex] = currentVelocity;
         bufferIndex = (bufferIndex + 1) % velocityBuffer.Length;
         
+        currentSpeed = currentVelocity.magnitude;
+        
+        // Jouer le son de whoosh pendant le mouvement rapide
+        if (enableSwipeSounds && currentSpeed > minSwipeSpeedForSound)
+        {
+            PlaySwipeSound();
+        }
+        
         lastPosition = transform.position;
     }
 
@@ -52,14 +65,13 @@ public class KatanaSlicer : MonoBehaviour
         {
             TrySliceFruit(other.gameObject);
         }
-        // ⭐ AJOUT: Détection des BOMBES
+        // Détection des BOMBES
         else if (IsBomb(other.gameObject))
         {
             TryTouchBomb(other.gameObject);
         }
     }
 
-    // ⭐ NOUVELLE MÉTHODE: Vérifier si c'est une bombe
     private bool IsBomb(GameObject obj)
     {
         if (obj == null) return false;
@@ -80,7 +92,6 @@ public class KatanaSlicer : MonoBehaviour
         return false;
     }
 
-    // ⭐ NOUVELLE MÉTHODE: Toucher une bombe
     private void TryTouchBomb(GameObject bombObject)
     {
         Vector3 averageVelocity = CalculateAverageVelocity();
@@ -94,8 +105,11 @@ public class KatanaSlicer : MonoBehaviour
                 bomb.OnTouch();
                 Debug.Log($"💣 Katana touched bomb! Speed: {speed:F2}");
                 
-                // Feedback visuel optionnel
-                PlayBombTouchFeedback();
+                // Son de touche de bombe
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayBombTouch();
+                }
             }
         }
         else
@@ -104,14 +118,6 @@ public class KatanaSlicer : MonoBehaviour
         }
     }
 
-    // Feedback optionnel pour le touch de bombe
-    private void PlayBombTouchFeedback()
-    {
-        // Vous pouvez ajouter des particules, sons, etc.
-        // Exemple: faire vibrer le contrôleur VR
-    }
-
-    // === MÉTHODES EXISTANTES (ne pas modifier) ===
     private bool IsSliceableFruit(GameObject obj)
     {
         if (fruitLayer != 0 && ((1 << obj.layer) & fruitLayer) == 0)
@@ -136,10 +142,30 @@ public class KatanaSlicer : MonoBehaviour
             
             slicer.Slice(fruit, slicePoint, sliceNormal);
             Debug.Log($"✅ Sliced {fruit.name} | Speed: {speed:F2}");
+            
+            // NOUVEAU : Notifier le GameManager
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnFruitSliced(fruit);
+            }
+            
+            // Son de découpe de fruit
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayFruitSlice();
+            }
         }
         else
         {
             Debug.Log($"❌ Too slow: {fruit.name} | Speed: {speed:F2} < {minSliceVelocity}");
+        }
+    }
+
+    private void PlaySwipeSound()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayKatanaWhoosh();
         }
     }
 

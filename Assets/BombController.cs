@@ -16,14 +16,14 @@ public class BombController : MonoBehaviour
     public float shakeFrequency = 12f;
 
     [Header("Explosion Settings")]
-    public AudioClip explosionSound;
     [Tooltip("Peut être nul sur un clone : sera créé dynamiquement.")]
     public GameObject eclipseQuad;
     [Tooltip("Durée du fade out du flash")]
     public float eclipseFadeOutDuration = 0.5f;
 
-    [Header("Audio")]
+    [Header("Audio - Legacy Fallback")]
     public AudioClip touchSound;
+    public AudioClip explosionSound;
 
     [Header("Debug")]
     public bool debugLogs = true;
@@ -46,12 +46,35 @@ public class BombController : MonoBehaviour
         if (eclipseQuad != null) eclipseQuad.SetActive(false);
     }
 
+    void Update()
+    {
+        // DEBUG (facultatif) : espace = toucher
+        if (Input.GetKeyDown(KeyCode.Space)) OnTouch();
+    }
+
     public void OnTouch()
     {
         if (isExploding) return;
 
         hitCount++;
-        if (touchSound && audioSource) audioSource.PlayOneShot(touchSound);
+        
+        // NOUVEAU : Notifier le GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnBombTouched();
+        }
+        
+        // Son de touche de bombe
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBombTouch();
+        }
+        else // Fallback à l'ancien système
+        {
+            if (touchSound && audioSource) 
+                audioSource.PlayOneShot(touchSound);
+        }
+        
         if (debugLogs) Debug.Log($"[Bomb] Touch {hitCount}/{touchesToExplode}", this);
 
         if (hitCount >= touchesToExplode)
@@ -121,8 +144,16 @@ public class BombController : MonoBehaviour
     // -------------------- FLASH BLANC --------------------
     private IEnumerator FlashCoroutineFinal()
     {
-        if (explosionSound != null && audioSource != null)
-            audioSource.PlayOneShot(explosionSound);
+        // Son d'explosion
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBombExplosion();
+        }
+        else // Fallback
+        {
+            if (explosionSound != null && audioSource != null)
+                audioSource.PlayOneShot(explosionSound);
+        }
 
         yield return new WaitForSeconds(0.3f);
 
@@ -141,16 +172,27 @@ public class BombController : MonoBehaviour
             float t = 0f;
             float fadeOut = Mathf.Max(0.01f, eclipseFadeOutDuration);
 
+            if (debugLogs) Debug.Log($"[Bomb] Starting flash fade out: {fadeOut}s");
+
             while (t < fadeOut)
             {
                 t += Time.deltaTime;
                 float a = Mathf.Lerp(1f, 0f, t / fadeOut);
                 SetMatAlpha(_flashMat, a);
+                
+                if (debugLogs && t % 0.1f < Time.deltaTime)
+                    Debug.Log($"[Bomb] Flash alpha: {a:F2}");
+                    
                 yield return null;
             }
             SetMatAlpha(_flashMat, 0f);
 
             eclipseQuad.SetActive(false);
+            if (debugLogs) Debug.Log("[Bomb] Flash completed");
+        }
+        else
+        {
+            if (debugLogs) Debug.LogWarning("[Bomb] Flash quad not properly initialized");
         }
 
         yield return new WaitForSeconds(0.05f);
@@ -163,7 +205,7 @@ public class BombController : MonoBehaviour
 #if UNITY_2022_2_OR_NEWER
         if (cam == null)
         {
-            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            var cams = FindObjectsByType<Camera>(FindObjectsSortMode.None);
             cam = cams.FirstOrDefault(c => c.isActiveAndEnabled);
         }
 #else
@@ -181,7 +223,10 @@ public class BombController : MonoBehaviour
             eclipseQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             eclipseQuad.name = "DynamicFlashQuad";
             var collider = eclipseQuad.GetComponent<Collider>();
-            if (collider != null) collider.enabled = false;
+            if (collider != null) 
+            {
+                DestroyImmediate(collider);
+            }
         }
 
         eclipseQuad.transform.SetParent(cam.transform, worldPositionStays: false);
@@ -190,14 +235,27 @@ public class BombController : MonoBehaviour
         eclipseQuad.transform.localScale = new Vector3(2f, 2f, 1f);
 
         _flashRenderer = eclipseQuad.GetComponent<MeshRenderer>();
+        if (_flashRenderer == null)
+        {
+            if (debugLogs) Debug.LogError("[Bomb] Failed to get MeshRenderer from flash quad");
+            return;
+        }
 
         if (_flashMat == null)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Unlit"); // URP
+            if (shader == null) shader = Shader.Find("Unlit/Transparent");  // Built-in transparent
             if (shader == null) shader = Shader.Find("Unlit/Color");        // Built-in
             if (shader == null) shader = Shader.Find("Standard");           // fallback
 
+            if (shader == null)
+            {
+                if (debugLogs) Debug.LogError("[Bomb] No suitable shader found for flash!");
+                return;
+            }
+
             _flashMat = new Material(shader);
+            if (debugLogs) Debug.Log($"[Bomb] Created flash material with shader: {shader.name}");
 
             // Couleur BLANCHE (alpha 0 au repos)
             SetMatColor(_flashMat, new Color(1f, 1f, 1f, 0f));
@@ -216,29 +274,54 @@ public class BombController : MonoBehaviour
             if (_flashMat.HasProperty("_Blend"))   _flashMat.SetFloat("_Blend", 0f);
             if (_flashMat.HasProperty("_QueueControl")) _flashMat.SetFloat("_QueueControl", 1f);
 
-            // Affichage “au-dessus de tout” si dispo
+            // Affichage "au-dessus de tout" si dispo
             if (_flashMat.HasProperty("_ZWrite")) _flashMat.SetInt("_ZWrite", 0);
             if (_flashMat.HasProperty("_ZTest"))  _flashMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+
+            // S'assurer que la couleur est bien blanche
+            SetMatColor(_flashMat, new Color(1f, 1f, 1f, 0f));
         }
 
         _flashRenderer.material = _flashMat;
         eclipseQuad.SetActive(false);
+        
+        if (debugLogs) Debug.Log("[Bomb] Flash quad initialized successfully");
     }
 
     // Helpers matériaux (gère _BaseColor ou _Color)
     private static void SetMatColor(Material m, Color c)
     {
         if (m == null) return;
-        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
-        if (m.HasProperty("_Color"))     m.SetColor("_Color", c);
+        
+        if (m.HasProperty("_BaseColor")) 
+        {
+            m.SetColor("_BaseColor", c);
+        }
+        else if (m.HasProperty("_Color"))     
+        {
+            m.SetColor("_Color", c);
+        }
+        else
+        {
+            Debug.LogWarning("[Bomb] Material has no _BaseColor or _Color property");
+        }
     }
 
     private static void SetMatAlpha(Material m, float a)
     {
         if (m == null) return;
+        
         Color c = Color.white;
-        if (m.HasProperty("_BaseColor")) c = m.GetColor("_BaseColor");
-        else if (m.HasProperty("_Color")) c = m.GetColor("_Color");
+        
+        if (m.HasProperty("_BaseColor")) 
+        {
+            c = m.GetColor("_BaseColor");
+        }
+        else if (m.HasProperty("_Color")) 
+        {
+            c = m.GetColor("_Color");
+        }
+        
         c.a = a;
         SetMatColor(m, c);
     }
@@ -247,6 +330,27 @@ public class BombController : MonoBehaviour
     {
         hitCount = 0;
         isExploding = false;
+        
         if (debugLogs) Debug.Log("[Bomb] Reset", this);
+    }
+
+    // Méthode pour forcer l'explosion (utile pour le debug)
+    public void ForceExplode()
+    {
+        if (!isExploding)
+        {
+            hitCount = touchesToExplode;
+            FreezePhysicsOnExplode();
+            StartExplosionSequence();
+        }
+    }
+
+    // Nettoyage
+    void OnDestroy()
+    {
+        if (_flashMat != null)
+        {
+            DestroyImmediate(_flashMat);
+        }
     }
 }
