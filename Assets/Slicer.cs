@@ -10,6 +10,11 @@ public class Slicer : MonoBehaviour
     public bool debugLogCapColor = false;
     public float gizmoNormalScale = 0.25f;
 
+    [Header("Physics Settings")]
+    public float sliceForce = 0.3f;
+    public float sliceTorque = 0.1f;
+    public float slicedMass = 0.5f;
+
     [Header("Audio")]
     public bool enableSliceSounds = true;
 
@@ -258,6 +263,13 @@ public class Slicer : MonoBehaviour
     {
         sliceA = null; sliceB = null;
 
+        // AJOUT: Vérifier si l'objet est déjà un morceau coupé
+        if (go.name.Contains("_Slice_"))
+        {
+            Debug.LogWarning($"⚠️ Tentative de découpe d'un morceau déjà coupé: {go.name}");
+            return;
+        }
+
         var mf = go.GetComponent<MeshFilter>();
         var renderer = go.GetComponent<Renderer>();
         if (mf == null || renderer == null || mf.sharedMesh == null) return;
@@ -396,7 +408,7 @@ public class Slicer : MonoBehaviour
         u.Normalize();
         Vector3 v = Vector3.Cross(planeNormal, u);
 
-        // Taille de tolérance adaptée à l’échelle (0.05% du rayon)
+        // Taille de tolérance adaptée à l'échelle (0.05% du rayon)
         float scaleRef = 0.0f;
         foreach (var s in segments) { scaleRef = Mathf.Max(scaleRef, (s.p0 - planePoint).magnitude, (s.p1 - planePoint).magnitude); }
         float tol = Mathf.Max(1e-4f, scaleRef * 5e-4f);     // monde
@@ -456,12 +468,12 @@ public class Slicer : MonoBehaviour
             if (adj.Count <= start || adj[start].Count == 0) continue;
             if (used[start]) continue;
 
-            // Suivi d’un cycle en choisissant à chaque fois le voisin le "plus angulairement proche"
+            // Suivi d'un cycle en choisissant à chaque fois le voisin le "plus angulairement proche"
             List<int> loop = new List<int>();
             int current = start;
             int prev = -1;
 
-            // On tente d’avancer jusqu’à ce qu’on revienne au point de départ
+            // On tente d'avancer jusqu'à ce qu'on revienne au point de départ
             for (int safety = 0; safety < 4096; safety++)
             {
                 loop.Add(current);
@@ -646,8 +658,11 @@ public class Slicer : MonoBehaviour
 
         var rb = slice.AddComponent<Rigidbody>();
         rb.useGravity = true;
-        rb.AddForce(forceDirection.normalized * 2f, ForceMode.Impulse);
-        rb.AddTorque(Random.insideUnitSphere, ForceMode.Impulse);
+        
+        // UTILISATION DES NOUVELLES VARIABLES POUR UN MOUVEMENT DOUX
+        rb.AddForce(forceDirection.normalized * sliceForce, ForceMode.Impulse);
+        rb.AddTorque(Random.insideUnitSphere * sliceTorque, ForceMode.Impulse);
+        rb.mass = slicedMass;
     }
 
     private Collider AddOptimalCollider(GameObject slice)

@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -29,8 +28,9 @@ public class GameManager : MonoBehaviour
 
     private Coroutine gameTimerCoroutine;
 
-    // Référence à votre FruitSpawner existant
+    // Références
     private FruitSpawner fruitSpawner;
+    private UIManager uiManager;
 
     // Événements
     public System.Action<int> OnScoreChanged;
@@ -54,23 +54,33 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Trouver votre FruitSpawner existant
-        fruitSpawner = Object.FindFirstObjectByType<FruitSpawner>();
+        // CORRIGÉ: Utilisation de FindFirstObjectByType au lieu de FindObjectOfType
+        fruitSpawner = FindFirstObjectByType<FruitSpawner>();
+        uiManager = FindFirstObjectByType<UIManager>();
         
         if (fruitSpawner == null)
         {
             Debug.LogError("FruitSpawner non trouvé! Assurez-vous qu'il est dans la scène.");
         }
 
-        if (UIManager.Instance == null)
+        if (uiManager == null)
         {
             Debug.LogError("UIManager non trouvé! Assurez-vous qu'il est dans la scène.");
         }
 
+        // Initialiser l'UI
+        if (uiManager != null)
+        {
+            uiManager.InitializeUI();
+        }
+
+        // Démarrer la musique
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayBackgroundMusic();
         }
+
+        Debug.Log("🎮 GameManager initialized");
     }
 
     // ==================== GESTION DU JEU ====================
@@ -79,6 +89,7 @@ public class GameManager : MonoBehaviour
     {
         if (gameRunning) return;
 
+        // Réinitialiser les variables
         currentScore = 0;
         currentLives = startLives;
         gameTimeRemaining = gameDuration;
@@ -88,23 +99,31 @@ public class GameManager : MonoBehaviour
         totalFruitsSliced = 0;
         totalBombsTouched = 0;
 
-        // Démarrer le timer du jeu
-        gameTimerCoroutine = StartCoroutine(GameTimerCoroutine());
-
-        // Activer le FruitSpawner (s'il a un système d'activation)
+        // Réinitialiser et démarrer le spawner
         if (fruitSpawner != null)
         {
-            // Si votre FruitSpawner a une méthode StartSpawning, appelez-la
-            // Sinon, il devrait déjà fonctionner automatiquement
-            fruitSpawner.enabled = true;
+            fruitSpawner.InitializeSpawner();
+            fruitSpawner.StartSpawnSystem();
         }
 
-        // Notifier les événements
+        // Démarrer le timer du jeu
+        if (gameTimerCoroutine != null)
+            StopCoroutine(gameTimerCoroutine);
+        gameTimerCoroutine = StartCoroutine(GameTimerCoroutine());
+
+        // Mettre à jour l'UI
         OnScoreChanged?.Invoke(currentScore);
         OnLivesChanged?.Invoke(currentLives);
         OnTimeChanged?.Invoke(gameTimeRemaining);
         OnGameStateChanged?.Invoke(true);
 
+        // Afficher l'écran de jeu
+        if (uiManager != null)
+        {
+            uiManager.ShowGameScreen();
+        }
+
+        // Son de début de jeu
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayGameStart();
@@ -126,23 +145,60 @@ public class GameManager : MonoBehaviour
             gameTimerCoroutine = null;
         }
 
-        // Désactiver le FruitSpawner
+        // Arrêter le spawner
         if (fruitSpawner != null)
         {
-            fruitSpawner.enabled = false;
+            fruitSpawner.StopSpawning();
         }
 
         // Nettoyer les objets restants
         CleanupObjects();
 
+        // Afficher l'écran de fin
+        if (uiManager != null)
+        {
+            uiManager.ShowGameOverScreen(currentScore, totalFruitsSliced, totalBombsTouched);
+        }
+
+        // Notifier les événements
         OnGameStateChanged?.Invoke(false);
 
+        // Son de fin de jeu
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayGameOver();
         }
 
         Debug.Log($"🏁 Game Over! Score final: {currentScore}, Fruits coupés: {totalFruitsSliced}, Bombes touchées: {totalBombsTouched}");
+    }
+
+    public void RestartGame()
+    {
+        Debug.Log("🔄 Redémarrage du jeu...");
+        
+        // Nettoyer complètement
+        CleanupObjects();
+        
+        // Redémarrer le jeu
+        StartGame();
+    }
+
+    public void QuitGame()
+    {
+        Debug.Log("🚪 Quitting game...");
+        
+        // Arrêter le jeu
+        if (gameRunning)
+        {
+            EndGame();
+        }
+        
+        // Quitter l'application (ou retourner au menu)
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
     }
 
     // ==================== GESTION SCORE/FRUITS ====================
@@ -153,6 +209,7 @@ public class GameManager : MonoBehaviour
 
         totalFruitsSliced++;
         
+        // Gestion du combo
         float currentTime = Time.time;
         if (currentTime - lastFruitTime <= comboTimeWindow)
         {
@@ -162,6 +219,14 @@ public class GameManager : MonoBehaviour
             {
                 AwardCombo();
             }
+            else
+            {
+                // Feedback visuel pour le combo en cours
+                if (uiManager != null)
+                {
+                    uiManager.ShowComboProgress(consecutiveFruits, fruitsForCombo);
+                }
+            }
         }
         else
         {
@@ -170,7 +235,14 @@ public class GameManager : MonoBehaviour
         
         lastFruitTime = currentTime;
 
+        // Ajouter les points
         AddScore(pointsPerFruit);
+
+        // Feedback visuel
+        if (uiManager != null)
+        {
+            uiManager.ShowFruitSlicedEffect(fruit.transform.position);
+        }
 
         Debug.Log($"🍉 Fruit coupé! +{pointsPerFruit} points (Combo: {consecutiveFruits})");
     }
@@ -184,6 +256,12 @@ public class GameManager : MonoBehaviour
         AddScore(-bombPenalty);
         LoseLife();
         consecutiveFruits = 0;
+
+        // Feedback visuel
+        if (uiManager != null)
+        {
+            uiManager.ShowBombTouchedEffect();
+        }
 
         Debug.Log($"💣 Bombe touchée! -{bombPenalty} points, Vies restantes: {currentLives}");
     }
@@ -201,8 +279,17 @@ public class GameManager : MonoBehaviour
     private void AwardCombo()
     {
         AddScore(pointsPerCombo);
+        
+        // Notifier le combo
         OnComboAchieved?.Invoke(consecutiveFruits);
 
+        // Feedback visuel
+        if (uiManager != null)
+        {
+            uiManager.ShowComboAchieved(consecutiveFruits);
+        }
+
+        // Son
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayScoreBonus();
@@ -220,19 +307,33 @@ public class GameManager : MonoBehaviour
             gameTimeRemaining -= Time.deltaTime;
             OnTimeChanged?.Invoke(gameTimeRemaining);
             
-            if (gameTimeRemaining <= 0)
+            // Avertissement temps faible
+            if (gameTimeRemaining <= 10f)
             {
-                EndGame();
-                yield break;
+                if (uiManager != null)
+                {
+                    uiManager.ShowTimeWarning(true);
+                }
+                
+                if (gameTimeRemaining <= 0)
+                {
+                    EndGame();
+                    yield break;
+                }
             }
             
             yield return null;
+        }
+        
+        if (gameTimeRemaining <= 0)
+        {
+            EndGame();
         }
     }
 
     private void CleanupObjects()
     {
-        // Nettoyer les fruits et bombes restants
+        // CORRIGÉ: Utilisation de FindObjectsByType avec le nouveau paramètre
         FruitController[] fruits = FindObjectsByType<FruitController>(FindObjectsSortMode.None);
         foreach (FruitController fruit in fruits)
         {
@@ -246,18 +347,41 @@ public class GameManager : MonoBehaviour
             if (bomb != null && bomb.gameObject != null)
                 Destroy(bomb.gameObject);
         }
+
+        // Nettoyer les morceaux de fruits coupés
+        GameObject[] slices = GameObject.FindGameObjectsWithTag("Slice");
+        foreach (GameObject slice in slices)
+        {
+            if (slice != null)
+                Destroy(slice);
+        }
+
+        Debug.Log("🧹 All game objects cleaned up");
     }
 
     private void AddScore(int points)
     {
+        int previousScore = currentScore;
         currentScore = Mathf.Max(0, currentScore + points);
         OnScoreChanged?.Invoke(currentScore);
+
+        // Feedback de score
+        if (uiManager != null && points > 0)
+        {
+            uiManager.ShowScoreGain(points);
+        }
     }
 
     private void LoseLife()
     {
         currentLives--;
         OnLivesChanged?.Invoke(currentLives);
+
+        // Feedback visuel de perte de vie
+        if (uiManager != null)
+        {
+            uiManager.ShowLifeLost();
+        }
 
         if (currentLives <= 0)
         {
@@ -274,14 +398,59 @@ public class GameManager : MonoBehaviour
     public int GetTotalFruitsSliced() => totalFruitsSliced;
     public int GetTotalBombsTouched() => totalBombsTouched;
 
+    // ==================== PAUSE/RESUME ====================
+
+    public void PauseGame()
+    {
+        if (!gameRunning) return;
+
+        Time.timeScale = 0f;
+        
+        if (uiManager != null)
+        {
+            uiManager.ShowPauseScreen();
+        }
+
+        Debug.Log("⏸️ Game paused");
+    }
+
+    public void ResumeGame()
+    {
+        if (!gameRunning) return;
+
+        Time.timeScale = 1f;
+        
+        if (uiManager != null)
+        {
+            uiManager.ShowGameScreen();
+        }
+
+        Debug.Log("▶️ Game resumed");
+    }
+
     // ==================== DEBUG ====================
 
+    [ContextMenu("Force Start Game")]
+    public void DebugStartGame() => StartGame();
+
     [ContextMenu("Force End Game")]
-    public void ForceEndGame() => EndGame();
+    public void DebugEndGame() => EndGame();
 
-    [ContextMenu("Add Test Score")]
-    public void AddTestScore() => AddScore(100);
+    [ContextMenu("Add 100 Points")]
+    public void DebugAddScore() => AddScore(100);
 
-    [ContextMenu("Lose Test Life")]
-    public void LoseTestLife() => LoseLife();
+    [ContextMenu("Lose One Life")]
+    public void DebugLoseLife() => LoseLife();
+
+    [ContextMenu("Simulate Fruit Slice")]
+    public void DebugSliceFruit()
+    {
+        OnFruitSliced(null);
+    }
+
+    [ContextMenu("Simulate Bomb Touch")]
+    public void DebugTouchBomb()
+    {
+        OnBombTouched();
+    }
 }

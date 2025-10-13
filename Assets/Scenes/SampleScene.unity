@@ -1626,6 +1626,7 @@ MonoBehaviour:
   - 0.4
   - 0.4
   - 0.2
+  - 0.2
   simultaneousSpawnDelay: 0.1
 --- !u!1 &802141373
 GameObject:
@@ -3941,7 +3942,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcdddd491c77c6447bd5c11e848a7bda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSliceVelocity: 0.2
+  minSliceVelocity: 1
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1
@@ -4841,7 +4842,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcdddd491c77c6447bd5c11e848a7bda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSliceVelocity: 0.2
+  minSliceVelocity: 1
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1

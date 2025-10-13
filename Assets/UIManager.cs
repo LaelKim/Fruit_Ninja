@@ -1,43 +1,51 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("Canvas References")]
-    public GameObject startMenuCanvas;
-    public GameObject gameUICanvas;
-    public GameObject gameOverCanvas;
+    [Header("UI Screens")]
+    public GameObject startScreen;
+    public GameObject gameScreen;
+    public GameObject pauseScreen;
+    public GameObject gameOverScreen;
 
-    [Header("Start Menu UI")]
-    public Button startButton;
-    public Button quitButton;
-    public TMP_Text highScoreText;
+    [Header("Game UI Elements")]
+    public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI timeText;
+    public TextMeshProUGUI livesText;
+    public TextMeshProUGUI comboText;
+    public Slider timeSlider;
 
-    [Header("Game UI")]
-    public TMP_Text scoreText;
-    public TMP_Text bombTouchCountText;
-    public TMP_Text timerText;
-    public TMP_Text livesText;
-    public TMP_Text comboText;
+    [Header("Game Over Screen")]
+    public TextMeshProUGUI finalScoreText;
+    public TextMeshProUGUI fruitsSlicedText;
+    public TextMeshProUGUI bombsTouchedText;
+    public TextMeshProUGUI highScoreText;
 
-    [Header("Game Over UI")]
-    public TMP_Text finalScoreText;
-    public TMP_Text bestScoreText;
-    public TMP_Text fruitsSlicedText;
-    public TMP_Text bombsTouchedText;
-    public Button restartButton;
-    public Button menuButton;
+    [Header("Combo System")]
+    public GameObject comboProgressPanel;
+    public Slider comboProgressSlider;
+    public TextMeshProUGUI comboCountText;
 
-    private int currentScore = 0;
-    private int bombTouchCount = 0;
-    private int currentLives = 3;
-    private float gameTime = 0f;
-    private bool gameRunning = false;
+    [Header("Effects")]
+    public GameObject scoreGainEffect;
+    public GameObject fruitSlicedEffect;
+    public GameObject bombTouchedEffect;
+    public GameObject comboAchievedEffect;
+    public AnimationCurve comboScaleCurve;
 
-    private const string HIGH_SCORE_KEY = "HighScore";
+    [Header("Life Display")]
+    public GameObject[] lifeIcons;
+    public Color lifeLostColor = Color.red;
+
+    // Variables internes
+    private int currentHighScore = 0;
+    private Coroutine comboProgressCoroutine;
+    private Coroutine timeWarningCoroutine;
 
     void Awake()
     {
@@ -55,252 +63,397 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         InitializeUI();
-        SetupButtonListeners();
-        ShowStartMenu();
+        LoadHighScore();
+    }
+
+    public void InitializeUI()
+    {
+        // Cacher tous les écrans sauf le start screen
+        if (startScreen != null) startScreen.SetActive(true);
+        if (gameScreen != null) gameScreen.SetActive(false);
+        if (pauseScreen != null) pauseScreen.SetActive(false);
+        if (gameOverScreen != null) gameOverScreen.SetActive(false);
+
+        // Initialiser les textes
+        UpdateScore(0);
+        UpdateTime(120f);
+        UpdateLives(3);
+        UpdateCombo(0);
+
+        // Cacher les effets
+        if (comboProgressPanel != null) comboProgressPanel.SetActive(false);
+        if (scoreGainEffect != null) scoreGainEffect.SetActive(false);
         
-        // S'abonner aux événements du GameManager
-        if (GameManager.Instance != null)
+        Debug.Log("🖥️ UI Manager initialized");
+    }
+
+    void LoadHighScore()
+    {
+        currentHighScore = PlayerPrefs.GetInt("HighScore", 0);
+        Debug.Log($"🏆 High score loaded: {currentHighScore}");
+    }
+
+    void SaveHighScore()
+    {
+        if (GameManager.Instance.GetCurrentScore() > currentHighScore)
         {
-            GameManager.Instance.OnScoreChanged += OnScoreUpdated;
-            GameManager.Instance.OnLivesChanged += OnLivesUpdated;
-            GameManager.Instance.OnTimeChanged += OnTimeUpdated;
-            GameManager.Instance.OnGameStateChanged += OnGameStateChanged;
-            GameManager.Instance.OnComboAchieved += OnComboAchieved;
+            currentHighScore = GameManager.Instance.GetCurrentScore();
+            PlayerPrefs.SetInt("HighScore", currentHighScore);
+            PlayerPrefs.Save();
+            Debug.Log($"🏆 New high score saved: {currentHighScore}");
         }
     }
 
-    void OnDestroy()
+    // ==================== GESTION DES ÉCRANS ====================
+
+    public void ShowStartScreen()
     {
-        // Se désabonner des événements
-        if (GameManager.Instance != null)
+        SetScreenActive(startScreen);
+        Debug.Log("🖥️ Showing start screen");
+    }
+
+    public void ShowGameScreen()
+    {
+        SetScreenActive(gameScreen);
+        Debug.Log("🖥️ Showing game screen");
+    }
+
+    public void ShowPauseScreen()
+    {
+        SetScreenActive(pauseScreen);
+        Debug.Log("🖥️ Showing pause screen");
+    }
+
+    public void ShowGameOverScreen(int finalScore, int fruitsSliced, int bombsTouched)
+    {
+        SetScreenActive(gameOverScreen);
+        
+        // Mettre à jour les textes de fin de jeu
+        if (finalScoreText != null)
+            finalScoreText.text = $"Score: {finalScore}";
+        
+        if (fruitsSlicedText != null)
+            fruitsSlicedText.text = $"Fruits Coupés: {fruitsSliced}";
+        
+        if (bombsTouchedText != null)
+            bombsTouchedText.text = $"Bombes Touchées: {bombsTouched}";
+
+        // Vérifier et sauvegarder le high score
+        SaveHighScore();
+        if (highScoreText != null)
+            highScoreText.text = $"Meilleur Score: {currentHighScore}";
+
+        Debug.Log("🖥️ Showing game over screen");
+    }
+
+    private void SetScreenActive(GameObject screenToShow)
+    {
+        GameObject[] allScreens = { startScreen, gameScreen, pauseScreen, gameOverScreen };
+        
+        foreach (GameObject screen in allScreens)
         {
-            GameManager.Instance.OnScoreChanged -= OnScoreUpdated;
-            GameManager.Instance.OnLivesChanged -= OnLivesUpdated;
-            GameManager.Instance.OnTimeChanged -= OnTimeUpdated;
-            GameManager.Instance.OnGameStateChanged -= OnGameStateChanged;
-            GameManager.Instance.OnComboAchieved -= OnComboAchieved;
+            if (screen != null)
+                screen.SetActive(screen == screenToShow);
         }
     }
 
-    void Update()
+    // ==================== MISE À JOUR UI ====================
+
+    public void UpdateScore(int score)
     {
-        if (gameRunning)
+        if (scoreText != null)
+            scoreText.text = $"Score: {score}";
+    }
+
+    public void UpdateTime(float timeRemaining)
+    {
+        if (timeText != null)
         {
-            UpdateGameTimer();
+            int minutes = Mathf.FloorToInt(timeRemaining / 60f);
+            int seconds = Mathf.FloorToInt(timeRemaining % 60f);
+            timeText.text = $"{minutes:00}:{seconds:00}";
+        }
+
+        if (timeSlider != null && GameManager.Instance != null)
+        {
+            float totalTime = GameManager.Instance.gameDuration;
+            timeSlider.value = timeRemaining / totalTime;
         }
     }
 
-    private void InitializeUI()
+    public void UpdateLives(int lives)
     {
-        startMenuCanvas.SetActive(false);
-        gameUICanvas.SetActive(false);
-        gameOverCanvas.SetActive(false);
-        comboText.gameObject.SetActive(false);
-    }
+        if (livesText != null)
+            livesText.text = $"Vies: {lives}";
 
-    private void SetupButtonListeners()
-    {
-        startButton.onClick.AddListener(StartGame);
-        quitButton.onClick.AddListener(QuitGame);
-        restartButton.onClick.AddListener(RestartGame);
-        menuButton.onClick.AddListener(ShowStartMenu);
-    }
-
-    // ==================== GESTION DES ÉVÉNEMENTS ====================
-
-    private void OnScoreUpdated(int newScore)
-    {
-        currentScore = newScore;
-        UpdateScoreUI();
-    }
-
-    private void OnLivesUpdated(int newLives)
-    {
-        currentLives = newLives;
-        UpdateLivesUI();
-    }
-
-    private void OnTimeUpdated(float timeRemaining)
-    {
-        gameTime = timeRemaining;
-        UpdateTimerUI();
-    }
-
-    private void OnGameStateChanged(bool isRunning)
-    {
-        gameRunning = isRunning;
-        if (!isRunning)
+        // Mettre à jour les icônes de vie
+        if (lifeIcons != null && lifeIcons.Length > 0)
         {
-            ShowGameOver();
+            for (int i = 0; i < lifeIcons.Length; i++)
+            {
+                if (lifeIcons[i] != null)
+                {
+                    lifeIcons[i].SetActive(i < lives);
+                }
+            }
         }
     }
 
-    private void OnComboAchieved(int comboCount)
+    public void UpdateCombo(int combo)
     {
-        ShowComboText(comboCount);
-    }
-
-    // ==================== ÉTATS DU JEU ====================
-
-    public void ShowStartMenu()
-    {
-        startMenuCanvas.SetActive(true);
-        gameUICanvas.SetActive(false);
-        gameOverCanvas.SetActive(false);
-
-        int highScore = PlayerPrefs.GetInt(HIGH_SCORE_KEY, 0);
-        highScoreText.text = $"MEILLEUR SCORE: {highScore}";
-
-        if (AudioManager.Instance != null)
+        if (comboText != null)
         {
-            AudioManager.Instance.PlayBackgroundMusic();
+            comboText.text = combo > 0 ? $"Combo: x{combo}" : "";
+            
+            // Animation du texte de combo
+            if (combo > 0)
+            {
+                StartCoroutine(AnimateComboText());
+            }
         }
     }
 
-    public void StartGame()
+    // ==================== EFFETS VISUELS ====================
+
+    public void ShowScoreGain(int points)
     {
-        if (AudioManager.Instance != null)
+        if (scoreGainEffect != null)
         {
-            AudioManager.Instance.PlayButtonClick();
+            StartCoroutine(ShowTemporaryEffect(scoreGainEffect, 1f));
+            
+            // Afficher le texte des points gagnés
+            TextMeshProUGUI pointsText = scoreGainEffect.GetComponentInChildren<TextMeshProUGUI>();
+            if (pointsText != null)
+            {
+                pointsText.text = $"+{points}";
+            }
+        }
+    }
+
+    public void ShowFruitSlicedEffect(Vector3 position)
+    {
+        if (fruitSlicedEffect != null)
+        {
+            // Convertir la position monde en position écran
+            Vector2 screenPosition = Camera.main.WorldToScreenPoint(position);
+            fruitSlicedEffect.transform.position = screenPosition;
+            
+            StartCoroutine(ShowTemporaryEffect(fruitSlicedEffect, 0.5f));
+        }
+    }
+
+    public void ShowBombTouchedEffect()
+    {
+        if (bombTouchedEffect != null)
+        {
+            StartCoroutine(ShowTemporaryEffect(bombTouchedEffect, 1f));
+        }
+    }
+
+    public void ShowComboProgress(int currentCombo, int maxCombo)
+    {
+        if (comboProgressPanel != null && comboProgressSlider != null && comboCountText != null)
+        {
+            comboProgressPanel.SetActive(true);
+            comboProgressSlider.value = (float)currentCombo / maxCombo;
+            comboCountText.text = $"{currentCombo}/{maxCombo}";
+
+            // Redémarrer le coroutine de masquage
+            if (comboProgressCoroutine != null)
+                StopCoroutine(comboProgressCoroutine);
+            comboProgressCoroutine = StartCoroutine(HideComboProgressAfterDelay(2f));
+        }
+    }
+
+    public void ShowComboAchieved(int comboLevel)
+    {
+        if (comboAchievedEffect != null)
+        {
+            StartCoroutine(ShowTemporaryEffect(comboAchievedEffect, 2f));
+            
+            // Afficher le niveau du combo
+            TextMeshProUGUI comboLevelText = comboAchievedEffect.GetComponentInChildren<TextMeshProUGUI>();
+            if (comboLevelText != null)
+            {
+                comboLevelText.text = $"COMBO x{comboLevel}!";
+            }
         }
 
-        startMenuCanvas.SetActive(false);
-        gameUICanvas.SetActive(true);
-        gameOverCanvas.SetActive(false);
+        // Masquer la barre de progression du combo
+        if (comboProgressPanel != null)
+        {
+            comboProgressPanel.SetActive(false);
+        }
+    }
 
+    public void ShowLifeLost()
+    {
+        // Animation des icônes de vie
+        if (lifeIcons != null && GameManager.Instance != null)
+        {
+            int currentLives = GameManager.Instance.GetCurrentLives();
+            if (currentLives >= 0 && currentLives < lifeIcons.Length && lifeIcons[currentLives] != null)
+            {
+                StartCoroutine(AnimateLifeLost(lifeIcons[currentLives]));
+            }
+        }
+    }
+
+    public void ShowTimeWarning(bool show)
+    {
+        if (timeText != null)
+        {
+            if (show)
+            {
+                if (timeWarningCoroutine != null)
+                    StopCoroutine(timeWarningCoroutine);
+                timeWarningCoroutine = StartCoroutine(AnimateTimeWarning());
+            }
+            else
+            {
+                if (timeWarningCoroutine != null)
+                    StopCoroutine(timeWarningCoroutine);
+                timeText.color = Color.white;
+            }
+        }
+    }
+
+    // ==================== COROUTINES D'ANIMATION ====================
+
+    private IEnumerator ShowTemporaryEffect(GameObject effect, float duration)
+    {
+        effect.SetActive(true);
+        yield return new WaitForSeconds(duration);
+        effect.SetActive(false);
+    }
+
+    private IEnumerator HideComboProgressAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (comboProgressPanel != null)
+        {
+            comboProgressPanel.SetActive(false);
+        }
+    }
+
+    private IEnumerator AnimateComboText()
+    {
+        if (comboText == null) yield break;
+
+        float duration = 0.5f;
+        float elapsed = 0f;
+        Vector3 originalScale = comboText.transform.localScale;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / duration;
+            float scale = comboScaleCurve.Evaluate(progress);
+            comboText.transform.localScale = originalScale * scale;
+            yield return null;
+        }
+
+        comboText.transform.localScale = originalScale;
+    }
+
+    private IEnumerator AnimateLifeLost(GameObject lifeIcon)
+    {
+        if (lifeIcon == null) yield break;
+
+        Image lifeImage = lifeIcon.GetComponent<Image>();
+        if (lifeImage == null) yield break;
+
+        Color originalColor = lifeImage.color;
+        lifeImage.color = lifeLostColor;
+
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            lifeImage.color = Color.Lerp(lifeLostColor, originalColor, elapsed / duration);
+            yield return null;
+        }
+
+        lifeImage.color = originalColor;
+    }
+
+    private IEnumerator AnimateTimeWarning()
+    {
+        if (timeText == null) yield break;
+
+        Color warningColor = Color.red;
+        float blinkInterval = 0.3f;
+
+        while (true)
+        {
+            timeText.color = warningColor;
+            yield return new WaitForSeconds(blinkInterval);
+            timeText.color = Color.white;
+            yield return new WaitForSeconds(blinkInterval);
+        }
+    }
+
+    // ==================== BOUTONS UI ====================
+
+    public void OnStartButtonClicked()
+    {
         if (GameManager.Instance != null)
         {
             GameManager.Instance.StartGame();
         }
     }
 
-    public void ShowGameOver()
+    public void OnRestartButtonClicked()
     {
-        gameRunning = false;
-        gameUICanvas.SetActive(false);
-        gameOverCanvas.SetActive(true);
-
-        // Mettre à jour l'UI de fin de jeu
-        finalScoreText.text = $"SCORE: {currentScore}";
-        
-        int highScore = PlayerPrefs.GetInt(HIGH_SCORE_KEY, 0);
-        if (currentScore > highScore)
-        {
-            highScore = currentScore;
-            PlayerPrefs.SetInt(HIGH_SCORE_KEY, highScore);
-            PlayerPrefs.Save();
-        }
-        bestScoreText.text = $"MEILLEUR SCORE: {highScore}";
-
-        // Afficher les statistiques
         if (GameManager.Instance != null)
         {
-            fruitsSlicedText.text = $"FRUITS COUPÉS: {GameManager.Instance.GetTotalFruitsSliced()}";
-            bombsTouchedText.text = $"BOMBES TOUCHÉES: {GameManager.Instance.GetTotalBombsTouched()}";
+            GameManager.Instance.RestartGame();
         }
+    }
 
-        if (AudioManager.Instance != null)
+    public void OnPauseButtonClicked()
+    {
+        if (GameManager.Instance != null)
         {
-            AudioManager.Instance.PlayGameOver();
+            GameManager.Instance.PauseGame();
         }
     }
 
-    // ==================== MISE À JOUR UI ====================
-
-    public void AddBombTouch()
+    public void OnResumeButtonClicked()
     {
-        bombTouchCount++;
-        UpdateBombTouchUI();
-    }
-
-    private void UpdateScoreUI()
-    {
-        scoreText.text = $"SCORE: {currentScore}";
-    }
-
-    private void UpdateBombTouchUI()
-    {
-        bombTouchCountText.text = $"BOMBES: {bombTouchCount}";
-    }
-
-    private void UpdateLivesUI()
-    {
-        livesText.text = $"VIES: {currentLives}";
-        livesText.color = currentLives <= 1 ? Color.red : Color.white;
-    }
-
-    private void UpdateGameTimer()
-    {
-        gameTime += Time.deltaTime;
-        UpdateTimerUI();
-    }
-
-    private void UpdateTimerUI()
-    {
-        int minutes = Mathf.FloorToInt(gameTime / 60f);
-        int seconds = Mathf.FloorToInt(gameTime % 60f);
-        timerText.text = $"TEMPS: {minutes:00}:{seconds:00}";
-        
-        // Changer la couleur quand le temps est faible
-        if (gameTime < 30f)
+        if (GameManager.Instance != null)
         {
-            timerText.color = Color.red;
+            GameManager.Instance.ResumeGame();
         }
     }
 
-    private void ShowComboText(int comboCount)
+    public void OnQuitButtonClicked()
     {
-        comboText.text = $"COMBO x{comboCount}!";
-        comboText.gameObject.SetActive(true);
-        
-        StartCoroutine(HideComboTextAfterDelay(2f));
-    }
-
-    private System.Collections.IEnumerator HideComboTextAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        comboText.gameObject.SetActive(false);
-    }
-
-    // ==================== BOUTONS ====================
-
-    private void RestartGame()
-    {
-        if (AudioManager.Instance != null)
+        if (GameManager.Instance != null)
         {
-            AudioManager.Instance.PlayButtonClick();
+            GameManager.Instance.QuitGame();
         }
-        StartGame();
     }
 
-    private void QuitGame()
-    {
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayButtonClick();
-        }
+    // ==================== DEBUG ====================
 
-        #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-        #else
-            Application.Quit();
-        #endif
+    [ContextMenu("Test Score Update")]
+    public void TestScoreUpdate()
+    {
+        UpdateScore(999);
     }
 
-    // ==================== METHODES PUBLIQUES ====================
-
-    public bool IsGameRunning()
+    [ContextMenu("Test Game Over Screen")]
+    public void TestGameOverScreen()
     {
-        return gameRunning;
+        ShowGameOverScreen(1500, 45, 3);
     }
 
-    public int GetCurrentScore()
+    [ContextMenu("Test Combo Effect")]
+    public void TestComboEffect()
     {
-        return currentScore;
-    }
-
-    public int GetBombTouchCount()
-    {
-        return bombTouchCount;
+        ShowComboAchieved(5);
     }
 }

@@ -1,11 +1,13 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class KatanaSlicer : MonoBehaviour
 {
     [Header("Slicing Settings")]
-    public float minSliceVelocity = 2.0f;
+    public float minSliceVelocity = 0.5f; // RÉDUIT de 2.0 à 0.5
     public LayerMask fruitLayer = 1;
-    
+    public float sliceCooldown = 0.1f; // AJOUT: Cooldown entre les slices
+
     [Header("Audio")]
     public bool enableSwipeSounds = true;
     public float minSwipeSpeedForSound = 1.0f;
@@ -18,6 +20,10 @@ public class KatanaSlicer : MonoBehaviour
     private int bufferIndex = 0;
     private Vector3 lastPosition;
     private float currentSpeed;
+    
+    // AJOUT: Système anti-découpe multiple
+    private HashSet<GameObject> slicedThisFrame = new HashSet<GameObject>();
+    private float lastSliceTime;
     
     void Start()
     {
@@ -53,6 +59,12 @@ public class KatanaSlicer : MonoBehaviour
             PlaySwipeSound();
         }
         
+        // AJOUT: Réinitialiser la liste des fruits coupés à chaque frame
+        if (slicedThisFrame.Count > 0)
+        {
+            slicedThisFrame.Clear();
+        }
+        
         lastPosition = transform.position;
     }
 
@@ -60,6 +72,16 @@ public class KatanaSlicer : MonoBehaviour
     {
         if (slicer == null) return;
         
+        // AJOUT: Vérifier le cooldown
+        if (Time.time - lastSliceTime < sliceCooldown) 
+        {
+            Debug.Log($"⏳ Cooldown actif, ignore: {other.gameObject.name}");
+            return;
+        }
+        
+        // AJOUT: Debug pour voir combien de collisions se produisent
+        Debug.Log($"🔹 Collision avec: {other.gameObject.name} (Frame: {Time.frameCount})");
+
         // Détection des FRUITS
         if (IsSliceableFruit(other.gameObject))
         {
@@ -132,6 +154,13 @@ public class KatanaSlicer : MonoBehaviour
 
     private void TrySliceFruit(GameObject fruit)
     {
+        // AJOUT: Empêcher la découpe multiple du même fruit
+        if (slicedThisFrame.Contains(fruit)) 
+        {
+            Debug.Log($"🚫 Fruit déjà coupé cette frame: {fruit.name}");
+            return;
+        }
+        
         Vector3 averageVelocity = CalculateAverageVelocity();
         float speed = averageVelocity.magnitude;
         
@@ -142,6 +171,10 @@ public class KatanaSlicer : MonoBehaviour
             
             slicer.Slice(fruit, slicePoint, sliceNormal);
             Debug.Log($"✅ Sliced {fruit.name} | Speed: {speed:F2}");
+            
+            // AJOUT: Marquer le fruit comme déjà coupé
+            slicedThisFrame.Add(fruit);
+            lastSliceTime = Time.time;
             
             // NOUVEAU : Notifier le GameManager
             if (GameManager.Instance != null)

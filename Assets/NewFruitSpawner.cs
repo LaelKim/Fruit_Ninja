@@ -10,7 +10,7 @@ public class FruitSpawner : MonoBehaviour
 
     [Header("Bomb Settings")] 
     [Range(0f, 1f)]
-    public float bombSpawnChance = 0.1f; // 10% de chance
+    public float bombSpawnChance = 0.1f;
     public int bombPrefabIndex = 8;
 
     [Header("Spawn Settings")]
@@ -43,10 +43,17 @@ public class FruitSpawner : MonoBehaviour
 
     void Start()
     {
+        InitializeSpawner();
+    }
+
+    // NOUVEAU : Méthode d'initialisation séparée pour le redémarrage
+    public void InitializeSpawner()
+    {
         if (spawnPoints != null && spawnPoints.Length > 0)
         {
             spawnPointOccupied = new bool[spawnPoints.Length];
             InitializeFruitLines();
+            Debug.Log("✅ FruitSpawner initialized with " + spawnPoints.Length + " spawn points");
         }
         else
         {
@@ -59,12 +66,10 @@ public class FruitSpawner : MonoBehaviour
         // Synchroniser avec le GameManager
         if (GameManager.Instance != null)
         {
-            // Arrêter le spawn si le jeu n'est pas en cours
             if (!GameManager.Instance.IsGameRunning() && spawnCoroutine != null)
             {
                 StopSpawning();
             }
-            // Redémarrer le spawn si le jeu commence
             else if (GameManager.Instance.IsGameRunning() && spawnCoroutine == null)
             {
                 StartSpawnSystem();
@@ -94,7 +99,6 @@ public class FruitSpawner : MonoBehaviour
         return Mathf.RoundToInt(position.x / 0.5f);
     }
 
-    // ⭐ MÉTHODE MANQUANTE AJOUTÉE : GetRandomRotation
     Quaternion GetRandomRotation()
     {
         return Random.rotation;
@@ -102,13 +106,50 @@ public class FruitSpawner : MonoBehaviour
 
     public void StartSpawnSystem()
     {
+        // NOUVEAU : Nettoyer les fruits restants avant de redémarrer
+        CleanupAllFruits();
+        
         if (spawnCoroutine != null)
             StopCoroutine(spawnCoroutine);
         
         spawnCoroutine = StartCoroutine(SpawnSystemRoutine());
+        
+        if (cleanupCoroutine != null)
+            StopCoroutine(cleanupCoroutine);
         cleanupCoroutine = StartCoroutine(CleanupFallenFruitsRoutine());
         
-        Debug.Log("🎮 Fruit spawning system started");
+        Debug.Log("🎮 Fruit spawning system STARTED");
+    }
+
+    // NOUVEAU : Méthode pour nettoyer tous les fruits existants
+    private void CleanupAllFruits()
+    {
+        // Nettoyer la liste activeFruits
+        for (int i = activeFruits.Count - 1; i >= 0; i--)
+        {
+            if (activeFruits[i] != null)
+            {
+                Destroy(activeFruits[i]);
+            }
+        }
+        activeFruits.Clear();
+        
+        // Nettoyer les fruits par ligne
+        foreach (var line in activeFruitsByLine)
+        {
+            line.Value.Clear();
+        }
+        
+        // Réinitialiser les spawn points occupés
+        if (spawnPointOccupied != null)
+        {
+            for (int i = 0; i < spawnPointOccupied.Length; i++)
+            {
+                spawnPointOccupied[i] = false;
+            }
+        }
+        
+        Debug.Log("🧹 All fruits cleaned up for restart");
     }
 
     IEnumerator SpawnSystemRoutine()
@@ -178,7 +219,6 @@ public class FruitSpawner : MonoBehaviour
 
     IEnumerator SpawnFruitAtPoint(int spawnIndex)
     {
-        // Vérifications de sécurité
         if (spawnIndex < 0 || spawnIndex >= spawnPointOccupied.Length) yield break;
         if (fruitPrefabs == null || fruitPrefabs.Length == 0) yield break;
         if (spawnPoints == null || spawnIndex >= spawnPoints.Length || spawnPoints[spawnIndex] == null) yield break;
@@ -195,7 +235,7 @@ public class FruitSpawner : MonoBehaviour
         }
 
         Transform spawnPoint = spawnPoints[spawnIndex];
-        GameObject fruit = Instantiate(fruitPrefab, spawnPoint.position, GetRandomRotation()); // ✅ Maintenant ça fonctionne!
+        GameObject fruit = Instantiate(fruitPrefab, spawnPoint.position, GetRandomRotation());
         
         if (fruit != null)
         {
@@ -491,7 +531,7 @@ public class FruitSpawner : MonoBehaviour
             cleanupCoroutine = null;
         }
         
-        Debug.Log("🛑 Fruit spawning stopped");
+        Debug.Log("🛑 Fruit spawning STOPPED");
     }
 
     void OnDrawGizmos()
