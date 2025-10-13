@@ -166,23 +166,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f098350ebdc5cca48a84e3006ca2ebc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startMenuCanvas: {fileID: 297311090}
-  gameUICanvas: {fileID: 186773203}
-  gameOverCanvas: {fileID: 802141373}
-  startButton: {fileID: 883087697}
-  quitButton: {fileID: 1819397936}
-  highScoreText: {fileID: 1992643367}
-  scoreText: {fileID: 1494860563}
-  bombTouchCountText: {fileID: 0}
-  timerText: {fileID: 2037419305}
-  livesText: {fileID: 1137587782}
-  comboText: {fileID: 1334484889}
-  finalScoreText: {fileID: 1876994848}
-  bestScoreText: {fileID: 503216045}
-  fruitsSlicedText: {fileID: 248784019}
-  bombsTouchedText: {fileID: 1032372511}
-  restartButton: {fileID: 1572203327}
-  menuButton: {fileID: 126258481}
+  StartMenuPanel: {fileID: 297311090}
+  GameUIPanel: {fileID: 186773203}
+  GameOverPanel: {fileID: 802141373}
+  PausePanel: {fileID: 0}
+  TitleText: {fileID: 1943155355}
+  StartButton: {fileID: 883087697}
+  QuitButton: {fileID: 1819397936}
+  HighScoreText: {fileID: 1992643367}
+  ScoreText: {fileID: 1494860563}
+  TimerText: {fileID: 2037419305}
+  LivesText: {fileID: 1137587782}
+  ComboText: {fileID: 1334484889}
+  TimeSlider: {fileID: 0}
+  GameOverTitle: {fileID: 337319902}
+  FinalScoreText: {fileID: 1876994848}
+  BestScoreText: {fileID: 503216045}
+  FruitsSlicedText: {fileID: 248784019}
+  BombsTouchedText: {fileID: 1032372511}
+  RestartButton: {fileID: 1572203327}
+  ComboProgressPanel: {fileID: 0}
+  ComboProgressSlider: {fileID: 0}
+  ComboCountText: {fileID: 0}
+  ScoreGainEffect: {fileID: 0}
+  FruitSlicedEffect: {fileID: 0}
+  BombTouchedEffect: {fileID: 0}
+  ComboAchievedEffect: {fileID: 0}
+  ComboScaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  LifeIcons: []
+  lifeLostColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!223 &75862910
 Canvas:
   m_ObjectHideFlags: 0
@@ -2582,6 +2617,9 @@ MonoBehaviour:
   enableDebug: 0
   debugLogCapColor: 0
   gizmoNormalScale: 0.25
+  sliceForce: 0.3
+  sliceTorque: 0.1
+  slicedMass: 0.5
   enableSliceSounds: 1
   epsilon: 0.00001
 --- !u!4 &1176417442
@@ -3946,6 +3984,7 @@ MonoBehaviour:
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1
+  sliceCooldown: 0.1
   enableSwipeSounds: 1
   minSwipeSpeedForSound: 1
   showDebugGizmos: 1
@@ -4846,6 +4885,7 @@ MonoBehaviour:
   fruitLayer:
     serializedVersion: 2
     m_Bits: 1
+  sliceCooldown: 0.1
   enableSwipeSounds: 1
   minSwipeSpeedForSound: 1
   showDebugGizmos: 1
