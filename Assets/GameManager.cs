@@ -9,14 +9,17 @@ public class GameManager : MonoBehaviour
     public int pointsPerFruit = 10;
     public int pointsPerCombo = 50;
     public int bombPenalty = 25;
-    public int startLives = 3;
     public float gameDuration = 120f;
 
     [Header("Combo System")]
     public float comboTimeWindow = 2.0f;
     public int fruitsForCombo = 3;
 
+    [Header("Difficulty Settings")]
+    public DifficultySettings difficultySettings = new DifficultySettings();
+
     // État
+    public int startLives { get; private set; } = 3; // Sera mis à jour selon la difficulté
     private int currentScore = 0;
     private int currentLives;
     private float gameTimeRemaining;
@@ -47,6 +50,23 @@ public class GameManager : MonoBehaviour
         if (fruitSpawner == null) Debug.LogError("FruitSpawner non trouvé dans la scène.");
 
         ui?.InitializeUI(this);
+    }
+
+    // ==================== DIFFICULTÉ ====================
+    public void SetDifficulty(DifficultySettings.Difficulty difficulty)
+    {
+        difficultySettings.currentDifficulty = difficulty;
+        startLives = difficultySettings.GetLives();
+        
+        // Appliquer les paramètres au spawner
+        if (fruitSpawner != null)
+        {
+            fruitSpawner.minSpawnInterval = difficultySettings.GetMinSpawnInterval();
+            fruitSpawner.maxSpawnInterval = difficultySettings.GetMaxSpawnInterval();
+            fruitSpawner.bombSpawnChance = difficultySettings.GetBombChance();
+        }
+
+        Debug.Log($"Difficulté définie: {difficultySettings.GetDifficultyName()} - Vies: {startLives}");
     }
 
     // ==================== CYCLE DE JEU ====================
@@ -86,7 +106,7 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         CleanupObjects();
-        StartGame();
+        ui?.ShowDifficultyPanel(); // Retour à la sélection de difficulté
     }
 
     public void GoToMenu()

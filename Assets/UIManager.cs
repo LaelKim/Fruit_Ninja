@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour
 
     [Header("ROOT PANELS")]
     public GameObject StartMenuPanel;
+    public GameObject DifficultyPanel;
     public GameObject GameUIPanel;
     public GameObject GameOverPanel;
 
@@ -18,11 +19,24 @@ public class UIManager : MonoBehaviour
     public Button QuitButton;
     public TextMeshProUGUI HighScoreText;
 
+    [Header("DifficultyPanel children")]
+    public TextMeshProUGUI DifficultyTitleText;
+    public Button EasyButton;
+    public Button NormalButton;
+    public Button HardButton;
+    public Button ExtremeButton;
+    public Button BackButton;
+    public TextMeshProUGUI EasyDescriptionText;
+    public TextMeshProUGUI NormalDescriptionText;
+    public TextMeshProUGUI HardDescriptionText;
+    public TextMeshProUGUI ExtremeDescriptionText;
+
     [Header("GameUIPanel children")]
     public TextMeshProUGUI ScoreText;
     public TextMeshProUGUI TimerText;
     public TextMeshProUGUI LivesText;
     public TextMeshProUGUI ComboText;
+    public TextMeshProUGUI DifficultyIndicatorText;
 
     [Header("GameOverPanel children")]
     public TextMeshProUGUI GameOverTitle;
@@ -44,7 +58,6 @@ public class UIManager : MonoBehaviour
         else { Destroy(gameObject); }
     }
 
-    // Appelée par GameManager.Start()
     public void InitializeUI(GameManager gameManager)
     {
         gm = gameManager;
@@ -52,20 +65,48 @@ public class UIManager : MonoBehaviour
         highScore = PlayerPrefs.GetInt("HighScore", 0);
         if (HighScoreText) HighScoreText.text = $"Best: {highScore}";
 
-        // Montrer uniquement le StartMenu
         SetOnlyActive(StartMenuPanel);
 
-        // Boutons
+        // Boutons Start Menu
         if (StartButton)
         {
             StartButton.onClick.RemoveAllListeners();
-            StartButton.onClick.AddListener(() => gm.StartGame());
+            StartButton.onClick.AddListener(() => ShowDifficultyPanel());
         }
         if (QuitButton)
         {
             QuitButton.onClick.RemoveAllListeners();
             QuitButton.onClick.AddListener(() => gm.QuitGame());
         }
+
+        // Boutons Difficulté
+        if (EasyButton)
+        {
+            EasyButton.onClick.RemoveAllListeners();
+            EasyButton.onClick.AddListener(() => SelectDifficulty(DifficultySettings.Difficulty.Easy));
+        }
+        if (NormalButton)
+        {
+            NormalButton.onClick.RemoveAllListeners();
+            NormalButton.onClick.AddListener(() => SelectDifficulty(DifficultySettings.Difficulty.Normal));
+        }
+        if (HardButton)
+        {
+            HardButton.onClick.RemoveAllListeners();
+            HardButton.onClick.AddListener(() => SelectDifficulty(DifficultySettings.Difficulty.Hard));
+        }
+        if (ExtremeButton)
+        {
+            ExtremeButton.onClick.RemoveAllListeners();
+            ExtremeButton.onClick.AddListener(() => SelectDifficulty(DifficultySettings.Difficulty.Extreme));
+        }
+        if (BackButton)
+        {
+            BackButton.onClick.RemoveAllListeners();
+            BackButton.onClick.AddListener(() => ShowStartMenu());
+        }
+
+        // Boutons Game Over
         if (RestartButton)
         {
             RestartButton.onClick.RemoveAllListeners();
@@ -77,6 +118,9 @@ public class UIManager : MonoBehaviour
             MenuButton.onClick.AddListener(() => gm.GoToMenu());
         }
 
+        // Descriptions des difficultés
+        UpdateDifficultyDescriptions();
+
         // Valeurs par défaut
         UpdateScore(0);
         UpdateTime(gm.gameDuration);
@@ -84,12 +128,39 @@ public class UIManager : MonoBehaviour
         UpdateCombo(0);
     }
 
+    private void UpdateDifficultyDescriptions()
+    {
+        if (EasyDescriptionText)
+            EasyDescriptionText.text = "5 vies • Spawn lent • Peu de bombes";
+        
+        if (NormalDescriptionText)
+            NormalDescriptionText.text = "3 vies • Spawn normal • Bombes modérées";
+        
+        if (HardDescriptionText)
+            HardDescriptionText.text = "2 vies • Spawn rapide • Plus de bombes";
+        
+        if (ExtremeDescriptionText)
+            ExtremeDescriptionText.text = "1 vie • Spawn très rapide • Beaucoup de bombes";
+    }
+
     // ==================== SCREENS ====================
     private void SetOnlyActive(GameObject panelToShow)
     {
-        GameObject[] all = { StartMenuPanel, GameUIPanel, GameOverPanel };
+        GameObject[] all = { StartMenuPanel, DifficultyPanel, GameUIPanel, GameOverPanel };
         foreach (var go in all)
             if (go) go.SetActive(go == panelToShow);
+    }
+
+    public void ShowDifficultyPanel()
+    {
+        SetOnlyActive(DifficultyPanel);
+        if (DifficultyTitleText) DifficultyTitleText.text = "Choisissez la difficulté";
+    }
+
+    private void SelectDifficulty(DifficultySettings.Difficulty difficulty)
+    {
+        gm.SetDifficulty(difficulty);
+        gm.StartGame();
     }
 
     public void ShowGameUI(int score, float timeRemaining, int lives)
@@ -100,11 +171,14 @@ public class UIManager : MonoBehaviour
         UpdateLives(lives);
         UpdateCombo(0);
         ShowTimeWarning(false);
+        
+        // Afficher la difficulté actuelle
+        if (DifficultyIndicatorText)
+            DifficultyIndicatorText.text = $"Difficulté: {gm.difficultySettings.GetDifficultyName()}";
     }
 
     public void ShowGameOverPanel(int finalScore, int fruits, int bombs)
     {
-        // High score
         if (finalScore > highScore)
         {
             highScore = finalScore;
@@ -120,7 +194,7 @@ public class UIManager : MonoBehaviour
         if (FruitsSlicedText) FruitsSlicedText.text = $"Fruits Sliced: {fruits}";
         if (BombsTouchedText) BombsTouchedText.text = $"Bombs Touched: {bombs}";
 
-        if (HighScoreText) HighScoreText.text = $"Best: {highScore}"; // aussi sur Start
+        if (HighScoreText) HighScoreText.text = $"Best: {highScore}";
     }
 
     public void ShowStartMenu()
